@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美酒館 マッコリ商品リスト | LINE GIFT トラッカー</title>
+<style>
+  :root {
+    --bg: #f6f5f3; --card: #ffffff; --text: #1c1a17; --muted: #706a62;
+    --line: #e4e0da; --accent: #7b1e2b; --accent-soft: #f3e7e6;
+    --new: #1a7f5a; --new-soft: #e4f4ec; --shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17140f; --card: #221e18; --text: #efe9df; --muted: #a49c8f;
+      --line: #34302a; --accent: #e0899a; --accent-soft: #3a2229;
+      --new: #4fd6a0; --new-soft: #17352a; --shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
+                 "Meiryo", system-ui, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  header {
+    padding: 22px 18px 16px; border-bottom: 1px solid var(--line);
+    background: var(--card);
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; letter-spacing: .02em; }
+  h1 .en { color: var(--muted); font-weight: 400; font-size: .8rem; margin-left: 6px; }
+  .meta { color: var(--muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  .meta a { color: var(--accent); text-decoration: none; }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-top: 14px;
+  }
+  input[type="search"], select {
+    font-size: .9rem; padding: 8px 11px; border: 1px solid var(--line);
+    border-radius: 9px; background: var(--bg); color: var(--text);
+  }
+  input[type="search"] { flex: 1; min-width: 180px; }
+  label.chk { font-size: .84rem; color: var(--muted); display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  main { max-width: 1080px; margin: 0 auto; padding: 16px 14px 60px; }
+  .count { font-size: .85rem; color: var(--muted); margin: 4px 2px 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  }
+  .card.gone { opacity: .55; }
+  .thumb { position: relative; aspect-ratio: 1/1; background: var(--bg); overflow: hidden; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .badges { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge { font-size: .68rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+  .badge.new { background: var(--new); color: #fff; }
+  .badge.soldout { background: #555; color: #fff; }
+  .badge.gone { background: var(--muted); color: var(--card); }
+  .body { padding: 12px 13px 14px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+  .name { font-size: .92rem; font-weight: 600; }
+  .name a { color: var(--text); text-decoration: none; }
+  .name a:hover { color: var(--accent); }
+  .row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .price { font-size: 1.05rem; font-weight: 700; color: var(--accent); }
+  .price .yen { font-size: .78rem; font-weight: 600; }
+  .tag { font-size: .72rem; color: var(--muted); background: var(--bg); border: 1px solid var(--line); padding: 1px 7px; border-radius: 6px; }
+  .catch { font-size: .8rem; color: var(--muted); }
+  .dates { font-size: .74rem; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; margin-top: auto; padding-top: 4px; }
+  .dates b { color: var(--text); font-weight: 600; }
+  details { font-size: .8rem; }
+  details summary { cursor: pointer; color: var(--accent); font-size: .78rem; }
+  details .desc { white-space: pre-wrap; color: var(--muted); margin-top: 6px; font-size: .78rem; }
+  .empty { text-align: center; color: var(--muted); padding: 40px; }
+  .idpill { font-size: .68rem; color: var(--muted); font-family: ui-monospace, monospace; }
+  footer { text-align: center; color: var(--muted); font-size: .72rem; padding: 20px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>美酒館 マッコリ商品リスト<span class="en">LINE GIFT tracker</span></h1>
+    <div class="meta">
+      <span id="updated">読み込み中…</span>
+      <span>販売中 <b id="total">-</b> 件</span>
+      <a id="shoplink" href="#" target="_blank" rel="noopener">ストアを開く ↗</a>
+      <a href="products.csv" download>CSVダウンロード ↓</a>
+      <a href="products.json" target="_blank">JSON</a>
+    </div>
+    <div class="controls">
+      <input type="search" id="q" placeholder="商品名・ブランド・詳細で検索…">
+      <select id="sort">
+        <option value="new">初回検出日が新しい順</option>
+        <option value="sale">販売開始日が新しい順</option>
+        <option value="price_desc">価格が高い順</option>
+        <option value="price_asc">価格が安い順</option>
+        <option value="name">商品名順</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="showgone"> 販売終了も表示</label>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="count" id="count"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none">該当する商品がありません。</div>
+</main>
+<footer id="footer"></footer>
+
+<script>
+const NEW_DAYS = 7; // 初回検出から何日間 NEW バッジを付けるか
+let DATA = { products: [] };
+
+function daysAgo(dateStr) {
+  if (!dateStr) return 99999;
+  const d = new Date(dateStr + "T00:00:00+09:00");
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+function esc(s){ return (s||"").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function yen(n){ return (n==null) ? "-" : Number(n).toLocaleString("ja-JP"); }
+
+function render() {
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const sort = document.getElementById("sort").value;
+  const showGone = document.getElementById("showgone").checked;
+  let list = DATA.products.filter(p => showGone || p.available !== false);
+
+  if (q) {
+    list = list.filter(p =>
+      [p.name_full, p.name, p.brand, p.description, p.catchphrase, p.category, p.id]
+        .join(" ").toLowerCase().includes(q));
+  }
+
+  const sorters = {
+    new: (a,b) => (b.first_seen||"").localeCompare(a.first_seen||"") || (b.sale_start_date||"").localeCompare(a.sale_start_date||""),
+    sale: (a,b) => (b.sale_start_date||"").localeCompare(a.sale_start_date||""),
+    price_desc: (a,b) => (b.price||0)-(a.price||0),
+    price_asc: (a,b) => (a.price||0)-(b.price||0),
+    name: (a,b) => (a.name_full||a.name||"").localeCompare(b.name_full||b.name||"", "ja"),
+  };
+  list.sort(sorters[sort]);
+
+  const grid = document.getElementById("grid");
+  grid.innerHTML = list.map(cardHTML).join("");
+  document.getElementById("empty").style.display = list.length ? "none" : "block";
+  document.getElementById("count").textContent = `${list.length} 件を表示`;
+}
+
+function cardHTML(p) {
+  const gone = p.available === false;
+  const isNew = !gone && daysAgo(p.first_seen) <= NEW_DAYS;
+  const soldout = !gone && !p.in_stock;
+  const name = esc(p.name_full || p.name);
+  const badges = [];
+  if (isNew) badges.push('<span class="badge new">NEW</span>');
+  if (soldout) badges.push('<span class="badge soldout">在庫なし</span>');
+  if (gone) badges.push('<span class="badge gone">販売終了</span>');
+  const desc = esc(p.description || "");
+  const spec = esc(p.spec || "");
+  const descBlock = (desc || spec)
+    ? `<details><summary>詳細を見る</summary><div class="desc">${[desc, spec].filter(Boolean).join("\n\n")}</div></details>`
+    : "";
+  const img = p.image_url
+    ? `<img loading="lazy" src="${esc(p.image_url)}" alt="">` : "";
+  return `
+  <div class="card ${gone?'gone':''}">
+    <div class="thumb">${img}<div class="badges">${badges.join("")}</div></div>
+    <div class="body">
+      <div class="name"><a href="${esc(p.url)}" target="_blank" rel="noopener">${name}</a></div>
+      <div class="row">
+        <span class="price"><span class="yen">¥</span>${yen(p.price)}</span>
+        ${p.brand ? `<span class="tag">${esc(p.brand)}</span>` : ""}
+        ${p.category ? `<span class="tag">${esc(p.category)}</span>` : ""}
+      </div>
+      ${p.catchphrase ? `<div class="catch">${esc(p.catchphrase)}</div>` : ""}
+      ${descBlock}
+      <div class="dates">
+        <span>販売開始 <b>${esc(p.sale_start_date||"-")}</b></span>
+        <span>検出 <b>${esc(p.first_seen||"-")}</b></span>
+        <span class="idpill">ID ${esc(p.id)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+fetch("products.json?_=" + Date.now())
+  .then(r => r.json())
+  .then(d => {
+    DATA = d;
+    document.getElementById("updated").textContent = "更新: " + d.updated_at;
+    document.getElementById("total").textContent = d.total;
+    const link = document.getElementById("shoplink");
+    link.href = d.shop_url;
+    document.getElementById("footer").textContent =
+      `キーワード「${d.keyword}」で抽出 ・ データは1日1回自動更新 ・ ${d.shop_name}`;
+    render();
+  })
+  .catch(e => {
+    document.getElementById("updated").textContent = "データ読み込みエラー: " + e;
+  });
+
+["q","sort","showgone"].forEach(id =>
+  document.getElementById(id).addEventListener("input", render));
+</script>
+</body>
+</html>

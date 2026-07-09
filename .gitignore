@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+*.swp
+# docs/ 配下の products.json / products.csv / last_run.json は
+# 意図的にコミットする（GitHub Pages で公開＆履歴を残すため）

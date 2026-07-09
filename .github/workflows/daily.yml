@@ -1,0 +1,37 @@
+name: daily-scrape
+
+# 1日1回スクレイピングして、変更があればコミットする
+on:
+  schedule:
+    - cron: "0 0 * * *"   # 毎日 00:00 UTC = 09:00 JST
+  workflow_dispatch: {}     # 手動実行も可能
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run scraper
+        run: python scraper.py
+
+      - name: Commit changes if any
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain docs/)" ]; then
+            git add docs/
+            git commit -m "chore: update products ($(date -u +%Y-%m-%d))"
+            git push
+          else
+            echo "変更なし"
+          fi
