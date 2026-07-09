@@ -15,6 +15,15 @@
     { "id": "ROM00017", "name": "something happy 菅浦の八朔142", "stock": 5, "memo": "" },
     { "id": "ROM00018", "name": "something happy うきうきホップ144", "stock": 11, "memo": "" },
     { "id": "ROM00019", "name": "NERD12", "stock": 13, "memo": "" },
-    { "id": "ROM00020", "name": "善山スイート", "stock": 6, "memo": "" }
+    { "id": "ROM00020", "name": "善山スイート", "stock": 6, "memo": "" },
+    { "id": "ROM00021", "name": "善山ベーシック", "stock": 0, "memo": "" },
+    { "id": "ROM00022", "name": "善山（ソンサン）ウェングギグ6", "stock": 0, "memo": "" },
+    { "id": "ROM00023", "name": "善山（ソンサン）ウェングギグ12", "stock": 0, "memo": "" },
+    { "id": "ROM00024", "name": "善山名家銘酒9", "stock": 0, "memo": "" },
+    { "id": "ROM00025", "name": "OLKE（オルケ）12度", "stock": 0, "memo": "" },
+    { "id": "ROM00026", "name": "ドゥルミ 本（ボン）生マッコリ", "stock": 0, "memo": "" },
+    { "id": "ROM00027", "name": "グルマ 柚子家09（ユジャガ09）生マッコリ", "stock": 0, "memo": "" },
+    { "id": "ROM00028", "name": "古い歌〈An Old Song〉", "stock": 0, "memo": "" },
+    { "id": "ROM00029", "name": "薬酒 二十九〈29〉375ml", "stock": 0, "memo": "" }
   ]
 }
