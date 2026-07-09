@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>美酒館 商品リスト | LINE GIFT トラッカー</title>
 <style>
   :root {
@@ -75,9 +76,39 @@
   .empty { text-align: center; color: var(--muted); padding: 40px; }
   .idpill { font-size: .68rem; color: var(--muted); font-family: ui-monospace, monospace; }
   footer { text-align: center; color: var(--muted); font-size: .72rem; padding: 20px; }
+  /* --- 合言葉ゲート --- */
+  #gate {
+    position: fixed; inset: 0; z-index: 999; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #gate .box {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); padding: 30px 26px; width: 100%; max-width: 360px; text-align: center;
+  }
+  #gate h2 { margin: 0 0 6px; font-size: 1.05rem; }
+  #gate p { margin: 0 0 18px; color: var(--muted); font-size: .82rem; }
+  #gate input {
+    width: 100%; font-size: 1rem; padding: 11px 13px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--bg); color: var(--text); text-align: center; margin-bottom: 12px;
+  }
+  #gate button {
+    width: 100%; font-size: .95rem; font-weight: 600; padding: 11px; border: none;
+    border-radius: 10px; background: var(--accent); color: #fff; cursor: pointer;
+  }
+  #gate .err { color: #c0392b; font-size: .8rem; min-height: 1.2em; margin-top: 10px; }
+  body.locked { overflow: hidden; }
 </style>
 </head>
-<body>
+<body class="locked">
+<div id="gate">
+  <div class="box">
+    <h2>美酒館 商品リスト</h2>
+    <p>閲覧には合言葉が必要です</p>
+    <input type="password" id="gatepw" placeholder="合言葉を入力" autocomplete="current-password">
+    <button id="gatebtn">開く</button>
+    <div class="err" id="gateerr"></div>
+  </div>
+</div>
 <header>
   <div class="wrap">
     <h1>美酒館 商品リスト<span class="en">LINE GIFT tracker</span></h1>
@@ -184,24 +215,65 @@ function cardHTML(p) {
   </div>`;
 }
 
-fetch("products.json?_=" + Date.now())
-  .then(r => r.json())
-  .then(d => {
-    DATA = d;
-    document.getElementById("updated").textContent = "更新: " + d.updated_at;
-    document.getElementById("total").textContent = d.total;
-    const link = document.getElementById("shoplink");
-    link.href = d.shop_url;
-    document.getElementById("footer").textContent =
-      `${d.keyword ? `キーワード「${d.keyword}」で抽出` : "全商品を掲載"} ・ データは1日1回自動更新 ・ ${d.shop_name}`;
-    render();
-  })
-  .catch(e => {
-    document.getElementById("updated").textContent = "データ読み込みエラー: " + e;
-  });
+function loadApp() {
+  fetch("products.json?_=" + Date.now())
+    .then(r => r.json())
+    .then(d => {
+      DATA = d;
+      document.getElementById("updated").textContent = "更新: " + d.updated_at;
+      document.getElementById("total").textContent = d.total;
+      const link = document.getElementById("shoplink");
+      link.href = d.shop_url;
+      document.getElementById("footer").textContent =
+        `${d.keyword ? `キーワード「${d.keyword}」で抽出` : "全商品を掲載"} ・ データは1日1回自動更新 ・ ${d.shop_name}`;
+      render();
+    })
+    .catch(e => {
+      document.getElementById("updated").textContent = "データ読み込みエラー: " + e;
+    });
 
-["q","sort","showgone"].forEach(id =>
-  document.getElementById(id).addEventListener("input", render));
+  ["q","sort","showgone"].forEach(id =>
+    document.getElementById(id).addEventListener("input", render));
+}
+
+/* ------------------------------------------------------------------
+   合言葉ゲート（SHA-256ハッシュ照合。合言葉自体はソースに含めない）
+   ※ 簡易的な入場制限です。products.json は直接取得可能なため、
+     本格的な限定公開が必要な場合は Cloudflare Access 等を利用してください。
+------------------------------------------------------------------ */
+const PW_HASH = "f33f5fa3263707e7e9721298d3775122eca430c9e9be187d4754fb57158c49a9";
+const GATE_KEY = "bijoukan_gate_ok";
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+function unlock() {
+  document.getElementById("gate").style.display = "none";
+  document.body.classList.remove("locked");
+  loadApp();
+}
+async function tryUnlock() {
+  const pw = document.getElementById("gatepw").value;
+  const err = document.getElementById("gateerr");
+  if (await sha256(pw) === PW_HASH) {
+    sessionStorage.setItem(GATE_KEY, "1");
+    unlock();
+  } else {
+    err.textContent = "合言葉が違います";
+    document.getElementById("gatepw").select();
+  }
+}
+document.getElementById("gatebtn").addEventListener("click", tryUnlock);
+document.getElementById("gatepw").addEventListener("keydown", e => {
+  if (e.key === "Enter") tryUnlock();
+});
+// 同じセッション中は再入力不要
+if (sessionStorage.getItem(GATE_KEY) === "1") {
+  unlock();
+} else {
+  document.getElementById("gatepw").focus();
+}
 </script>
 </body>
 </html>
