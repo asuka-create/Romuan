@@ -43,6 +43,7 @@
     border-radius: 9px; background: var(--surface); color: var(--text); cursor: pointer; }
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   button.ghost { background: transparent; }
+  .toolbar select { font-size: .85rem; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface2); color: var(--text); }
   .sync { font-size: .78rem; margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--muted); }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
   .sync.ok .dot { background: var(--ok); } .sync.saving .dot { background: var(--warn); }
@@ -147,8 +148,12 @@
     <div class="toolbar">
       <input type="search" id="q" placeholder="販売ID・販売名・掲載IDで検索…">
       <button id="addsale" class="primary">＋ 販売登録を追加</button>
-      <button id="expYahoo" class="ghost" style="border-color:var(--yahoo);color:var(--yahoo)">Yahoo取込ファイル</button>
-      <button id="expShopify" class="ghost" style="border-color:var(--shopify);color:var(--shopify)">Shopify取込ファイル</button>
+      <select id="expScope" title="出力対象">
+        <option value="pending">未掲載のみ</option>
+        <option value="all">全件</option>
+      </select>
+      <button id="expYahoo" class="ghost" style="border-color:var(--yahoo);color:var(--yahoo)">Yahoo取込</button>
+      <button id="expShopify" class="ghost" style="border-color:var(--shopify);color:var(--shopify)">Shopify取込</button>
       <button id="reload" class="ghost">サーバから再読込</button>
       <button id="export" class="ghost">JSONバックアップ</button>
       <span class="sync" id="sync"><span class="dot"></span><span id="syncmsg">—</span></span>
@@ -360,6 +365,11 @@ function render(){
   document.getElementById("cline").textContent = cLine;
   document.getElementById("cyahoo").textContent = cYahoo;
   document.getElementById("cshopify").textContent = cShopify;
+  const withContent = DATA.filter(s=>lineOf(s)||s.name);
+  const pendY = withContent.filter(s=>!s.channels.yahoo.listed).length;
+  const pendS = withContent.filter(s=>!s.channels.shopify.listed).length;
+  document.getElementById("expYahoo").textContent = `Yahoo取込 (未${pendY})`;
+  document.getElementById("expShopify").textContent = `Shopify取込 (未${pendS})`;
   document.getElementById("dupewarn").textContent = dupes ? `　⚠ LINE重複紐付け ${dupes} 件` : "";
   document.getElementById("empty").style.display = DATA.length ? "none" : "block";
 }
@@ -443,10 +453,11 @@ function slugify(s){
     .replace(/[「」【】（）()｜|・、。／/，,＆&%％!！?？:：;；'"'"’]/g," ")
     .replace(/[\s　]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,120) || "romuan-item";
 }
-function buildShopifyCSV(){
+function buildShopifyCSV(list){
+  list = list || DATA;
   const lines=[SHOPIFY_COLS.join(",")];
   const row=obj=>SHOPIFY_COLS.map(c=>csvCell(obj[c]||"")).join(",");
-  DATA.forEach(s=>{
+  list.forEach(s=>{
     const lp=lineOf(s); if(!lp && !s.name) return;
     const title=s.name || (lp?(lp.name_full||lp.name):"");
     const imgs=(lp&&lp.images&&lp.images.length)?lp.images:(lp&&lp.image_url?[lp.image_url]:[]);
@@ -472,10 +483,11 @@ function buildShopifyCSV(){
 }
 
 // Yahoo!ショッピング 商品データ（ストアクリエイターPro 個別項目・TSV）
-function buildYahooTSV(){
+function buildYahooTSV(list){
+  list = list || DATA;
   const cols=["code","name","price","sale-price","headline","caption","abstract","explanation","brand","product-category"];
   const lines=[cols.join("\t")];
-  DATA.forEach(s=>{
+  list.forEach(s=>{
     const lp=lineOf(s); if(!lp && !s.name) return;
     const title=s.name || (lp?(lp.name_full||lp.name):"");
     const row=[
@@ -488,11 +500,29 @@ function buildYahooTSV(){
   return lines.join("\r\n");
 }
 
+// エクスポート対象の販売登録（未掲載のみ or 全件）
+function salesForExport(channel){
+  const onlyPending = document.getElementById("expScope").value === "pending";
+  return DATA.filter(s => (lineOf(s) || s.name) && (!onlyPending || !s.channels[channel].listed));
+}
+function afterExport(channel, list, label){
+  if (document.getElementById("expScope").value !== "pending") return;
+  if (confirm(`${list.length}件を書き出しました。\nこれらを「${label} 掲載済み」にして、次回のエクスポート対象から外しますか？`)){
+    list.forEach(s => { s.channels[channel].listed = true; pushRow(s.id); });
+    render();
+  }
+}
 document.getElementById("expShopify").addEventListener("click",()=>{
-  download("shopify_products.csv", buildShopifyCSV(), "text/csv;charset=utf-8");
+  const list = salesForExport("shopify");
+  if(!list.length){ alert("Shopify未掲載の販売登録がありません。"); return; }
+  download("shopify_products.csv", buildShopifyCSV(list), "text/csv;charset=utf-8");
+  afterExport("shopify", list, "Shopify");
 });
 document.getElementById("expYahoo").addEventListener("click",()=>{
-  download("yahoo_items.tsv", buildYahooTSV(), "text/tab-separated-values;charset=utf-8");
+  const list = salesForExport("yahoo");
+  if(!list.length){ alert("Yahoo未掲載の販売登録がありません。"); return; }
+  download("yahoo_items.tsv", buildYahooTSV(list), "text/tab-separated-values;charset=utf-8");
+  afterExport("yahoo", list, "Yahoo!ショップ");
 });
 
 document.getElementById("reload").addEventListener("click",()=>{ if(confirm("サーバから最新を読み込みます。よろしいですか？")) loadServer(); });
