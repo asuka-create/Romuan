@@ -147,6 +147,8 @@
     <div class="toolbar">
       <input type="search" id="q" placeholder="販売ID・販売名・掲載IDで検索…">
       <button id="addsale" class="primary">＋ 販売登録を追加</button>
+      <button id="expYahoo" class="ghost" style="border-color:var(--yahoo);color:var(--yahoo)">Yahoo取込ファイル</button>
+      <button id="expShopify" class="ghost" style="border-color:var(--shopify);color:var(--shopify)">Shopify取込ファイル</button>
       <button id="reload" class="ghost">サーバから再読込</button>
       <button id="export" class="ghost">JSONバックアップ</button>
       <span class="sync" id="sync"><span class="dot"></span><span id="syncmsg">—</span></span>
@@ -204,7 +206,7 @@ function normalize(s){
 async function init(){
   // 社内商品（構成品ドロップダウン）— Supabaseから取得
   try {
-    const r = await fetch(SB_URL + "/rest/v1/romuan_products?select=id,name&order=position.asc,id.asc", { headers: sbHeaders() });
+    const r = await fetch(SB_URL + "/rest/v1/romuan_products?select=id,name,stock&order=position.asc,id.asc", { headers: sbHeaders() });
     BASE = r.ok ? await r.json() : [];
     if (BASE.length) localStorage.setItem("base_cache_v2", JSON.stringify(BASE));
   } catch {
@@ -396,6 +398,74 @@ document.getElementById("addsale").addEventListener("click",()=>{
   const s=normalize({id:nextSaleId(),name:"",items:[],channels:{},memo:"",position:pos});
   DATA.push(s); document.getElementById("q").value=""; render(); pushRow(s.id);
   const el=document.querySelector("#list .sale:last-child"); if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.querySelector(".sname").focus(); }
+});
+
+/* ---------- Yahoo / Shopify 取込ファイル生成 ---------- */
+function baseStock(id){ const p=BASE.find(x=>x.id===id); return p?Number(p.stock)||0:0; }
+function buildableQty(s){
+  const items=(s.items||[]).filter(it=>it.product_id);
+  if(!items.length) return "";
+  return items.reduce((m,it)=>Math.min(m, Math.floor(baseStock(it.product_id)/(Number(it.qty)||1))), Infinity);
+}
+function lineOf(s){ return LINE.find(x=>x.id===s.channels.linegift.id) || null; }
+function bodyHtml(lp){
+  if(!lp) return "";
+  const parts=[];
+  if(lp.catchphrase) parts.push(`<p><strong>${lp.catchphrase}</strong></p>`);
+  if(lp.description) parts.push(`<p>${String(lp.description).replace(/\n/g,"<br>")}</p>`);
+  if(lp.spec) parts.push(`<p>${String(lp.spec).replace(/\n/g,"<br>")}</p>`);
+  return parts.join("");
+}
+function download(name, text, mime){
+  const blob=new Blob(["﻿"+text],{type:mime}); const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+function csvCell(v){ v=(v==null?"":String(v)); return '"'+v.replace(/"/g,'""')+'"'; }
+function tsvCell(v){ return (v==null?"":String(v)).replace(/[\t\r\n]+/g," ").trim(); }
+
+// Shopify 商品CSV（標準インポート形式・UTF-8）
+function buildShopifyCSV(){
+  const cols=["Handle","Title","Body (HTML)","Vendor","Type","Tags","Published",
+    "Option1 Name","Option1 Value","Variant SKU","Variant Inventory Tracker","Variant Inventory Qty",
+    "Variant Inventory Policy","Variant Fulfillment Service","Variant Price","Variant Requires Shipping",
+    "Variant Taxable","Image Src","Status"];
+  const lines=[cols.join(",")];
+  DATA.forEach(s=>{
+    const lp=lineOf(s); if(!lp && !s.name) return;
+    const title=s.name || (lp?(lp.name_full||lp.name):"");
+    const row=[
+      "romuan-"+String(s.id).toLowerCase(), title, bodyHtml(lp),
+      (lp&&lp.brand)||"美酒館", (lp&&lp.category)||"", [lp&&lp.brand,lp&&lp.category].filter(Boolean).join(", "),
+      "FALSE","Title","Default Title", s.id, "shopify", buildableQty(s),
+      "deny","manual", (lp?lp.price:""), "TRUE","TRUE", (lp?lp.image_url:""), "draft"
+    ];
+    lines.push(row.map(csvCell).join(","));
+  });
+  return lines.join("\r\n");
+}
+
+// Yahoo!ショッピング 商品データ（ストアクリエイターPro 個別項目・TSV）
+function buildYahooTSV(){
+  const cols=["code","name","price","sale-price","headline","caption","abstract","explanation","brand","product-category"];
+  const lines=[cols.join("\t")];
+  DATA.forEach(s=>{
+    const lp=lineOf(s); if(!lp && !s.name) return;
+    const title=s.name || (lp?(lp.name_full||lp.name):"");
+    const row=[
+      String(s.id).toLowerCase(), title, (lp?lp.price:""), "",
+      (lp&&lp.catchphrase)||"", (lp?(lp.name_full||lp.name):""), (lp&&lp.catchphrase)||"",
+      bodyHtml(lp), (lp&&lp.brand)||"", (lp&&lp.category)||""
+    ];
+    lines.push(row.map(tsvCell).join("\t"));
+  });
+  return lines.join("\r\n");
+}
+
+document.getElementById("expShopify").addEventListener("click",()=>{
+  download("shopify_products.csv", buildShopifyCSV(), "text/csv;charset=utf-8");
+});
+document.getElementById("expYahoo").addEventListener("click",()=>{
+  download("yahoo_items.tsv", buildYahooTSV(), "text/tab-separated-values;charset=utf-8");
 });
 
 document.getElementById("reload").addEventListener("click",()=>{ if(confirm("サーバから最新を読み込みます。よろしいですか？")) loadServer(); });
