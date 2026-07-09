@@ -394,6 +394,14 @@ document.getElementById("list").addEventListener("input",e=>{
     scheduleSave(s.id);
   }
 });
+// 掲載ID/URLを入力(確定)したら、そのチャネルを自動で「掲載済み」に
+document.getElementById("list").addEventListener("change",e=>{
+  const el=e.target; if(el.dataset.si==null || !el.dataset.ch) return;
+  if(el.dataset.cf!=="id" && el.dataset.cf!=="url") return;
+  const s=DATA[el.dataset.si], ch=s.channels[el.dataset.ch];
+  const has=(ch.id||"").trim() || (ch.url||"").trim();
+  if(has && !ch.listed){ ch.listed=true; scheduleSave(s.id); render(); }
+});
 document.getElementById("list").addEventListener("click",e=>{
   const b=e.target.closest("[data-act]"); if(!b) return;
   const si=+b.dataset.si, s=DATA[si], act=b.dataset.act;
