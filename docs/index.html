@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>美酒館 マッコリ商品リスト | LINE GIFT トラッカー</title>
+<title>美酒館 商品リスト | LINE GIFT トラッカー</title>
 <style>
   :root {
     --bg: #f6f5f3; --card: #ffffff; --text: #1c1a17; --muted: #706a62;
@@ -80,7 +80,7 @@
 <body>
 <header>
   <div class="wrap">
-    <h1>美酒館 マッコリ商品リスト<span class="en">LINE GIFT tracker</span></h1>
+    <h1>美酒館 商品リスト<span class="en">LINE GIFT tracker</span></h1>
     <div class="meta">
       <span id="updated">読み込み中…</span>
       <span>販売中 <b id="total">-</b> 件</span>
@@ -193,7 +193,7 @@ fetch("products.json?_=" + Date.now())
     const link = document.getElementById("shoplink");
     link.href = d.shop_url;
     document.getElementById("footer").textContent =
-      `キーワード「${d.keyword}」で抽出 ・ データは1日1回自動更新 ・ ${d.shop_name}`;
+      `${d.keyword ? `キーワード「${d.keyword}」で抽出` : "全商品を掲載"} ・ データは1日1回自動更新 ・ ${d.shop_name}`;
     render();
   })
   .catch(e => {

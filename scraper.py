@@ -13,7 +13,7 @@ mall.line.me のストアページ (LINE GIFT) から商品一覧を取得し、
 設定は環境変数でも上書き可能:
   SHOP_ID      : LINE GIFT のショップID   (default: 839465)
   SHORT_PATH   : ストアの短縮パス /sb/xxxx (default: d84e5e64)
-  KEYWORD      : 抽出キーワード           (default: マッコリ  / 空にすると全商品)
+  KEYWORD      : 抽出キーワード           (default: 空＝全商品 / 例: マッコリ)
   REFRESH_ALL  : "1" で全商品の詳細を毎回取り直す (default: 新規のみ)
 """
 
@@ -33,7 +33,7 @@ from datetime import datetime, timezone, timedelta
 # ----------------------------------------------------------------------------
 SHOP_ID     = os.environ.get("SHOP_ID", "839465")
 SHORT_PATH  = os.environ.get("SHORT_PATH", "d84e5e64")
-KEYWORD     = os.environ.get("KEYWORD", "マッコリ")
+KEYWORD     = os.environ.get("KEYWORD", "")   # 空＝全商品。"マッコリ" 等で絞り込み可
 REFRESH_ALL = os.environ.get("REFRESH_ALL", "") == "1"
 
 BASE        = "https://mall.line.me"
@@ -224,7 +224,7 @@ def main():
         if KEYWORD and KEYWORD not in name:
             continue
         matched.append(it)
-    print(f"  '{KEYWORD}' 該当: {len(matched)} 件")
+    print(f"  抽出対象({KEYWORD or '全商品'}): {len(matched)} 件")
 
     current_ids = set()
     new_products = []
