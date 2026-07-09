@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>販売登録 | 美酒館トラッカー</title>
+<style>
+  :root {
+    --bg: #f6f5f3; --card: #ffffff; --text: #1c1a17; --muted: #706a62;
+    --line: #e4e0da; --accent: #7b1e2b; --new: #1a7f5a;
+    --warn: #b8791b; --warn-soft: #f8efdc; --err: #c0392b; --err-soft: #f7e4e1;
+    --shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17140f; --card: #221e18; --text: #efe9df; --muted: #a49c8f;
+      --line: #34302a; --accent: #e0899a; --new: #4fd6a0;
+      --warn: #e0b463; --warn-soft: #35291a; --err: #e08a7d; --err-soft: #3a2320;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  header { padding: 20px 18px 14px; border-bottom: 1px solid var(--line); background: var(--card); }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.2rem; margin: 0 0 4px; }
+  h1 .en { color: var(--muted); font-weight: 400; font-size: .78rem; margin-left: 6px; }
+  nav { display: flex; gap: 14px; margin: 8px 0 2px; font-size: .86rem; flex-wrap: wrap; }
+  nav a { color: var(--muted); text-decoration: none; padding-bottom: 3px; }
+  nav a.active { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 600; }
+  .meta { color: var(--muted); font-size: .82rem; margin-top: 6px; }
+  .meta b { color: var(--text); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  input[type="search"] { flex: 1; min-width: 160px; font-size: .9rem; padding: 8px 11px;
+    border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--text); }
+  button { font-size: .85rem; font-weight: 600; padding: 8px 13px; border: 1px solid var(--line);
+    border-radius: 9px; background: var(--card); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.ghost { background: transparent; }
+  .save-state { font-size: .78rem; color: var(--muted); margin-left: auto; }
+  main { max-width: 1000px; margin: 0 auto; padding: 14px 14px 80px; }
+  .banner { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn);
+    border-radius: 10px; padding: 9px 13px; font-size: .82rem; margin-bottom: 14px;
+    display: none; align-items: center; gap: 10px; justify-content: space-between; }
+  .banner button { border-color: var(--warn); color: var(--warn); background: transparent; padding: 4px 10px; font-size: .78rem; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+  .sale { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 14px 15px; margin-bottom: 14px; }
+  .sale.dupe { border-color: var(--err); }
+  .sale-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .sale-head .sid { width: 110px; font-family: ui-monospace, monospace; font-weight: 600; }
+  .sale-head .sname { flex: 1; min-width: 160px; font-weight: 600; }
+  .sale input, .sale select { font-size: .88rem; padding: 6px 9px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--bg); color: var(--text); }
+  .field { margin-top: 11px; }
+  .flabel { font-size: .74rem; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .linkrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .linkrow select { flex: 1; min-width: 200px; }
+  .linkinfo { font-size: .78rem; color: var(--new); }
+  .linkinfo.none { color: var(--muted); }
+  .linkinfo.dupe { color: var(--err); font-weight: 600; }
+  .items { margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+  .item { display: flex; gap: 6px; align-items: center; }
+  .item select { flex: 1; min-width: 140px; }
+  .item .qty { width: 66px; text-align: center; }
+  .item .times { color: var(--muted); font-size: .85rem; }
+  .item .x { color: var(--err); border: none; background: transparent; cursor: pointer; font-size: .95rem; padding: 2px 6px; }
+  .additem { align-self: flex-start; font-size: .78rem; padding: 5px 10px; }
+  .sale-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 8px; flex-wrap: wrap; }
+  .memo { flex: 1; min-width: 160px; }
+  .del { color: var(--err); border: 1px solid var(--line); background: transparent; cursor: pointer; padding: 6px 10px; border-radius: 8px; font-size: .8rem; }
+  #gate { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  #gate .box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 30px 26px; width: 100%; max-width: 360px; text-align: center; }
+  #gate h2 { margin: 0 0 6px; font-size: 1.05rem; }
+  #gate p { margin: 0 0 18px; color: var(--muted); font-size: .82rem; }
+  #gate input { width: 100%; font-size: 1rem; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); text-align: center; margin-bottom: 12px; }
+  #gate button { width: 100%; font-size: .95rem; padding: 11px; border: none; border-radius: 10px; background: var(--accent); color: #fff; }
+  #gate .err { color: var(--err); font-size: .8rem; min-height: 1.2em; margin-top: 10px; }
+  body.locked { overflow: hidden; }
+</style>
+</head>
+<body class="locked">
+<div id="gate">
+  <div class="box">
+    <h2>販売登録</h2>
+    <p>閲覧には合言葉が必要です</p>
+    <input type="password" id="gatepw" placeholder="合言葉を入力" autocomplete="current-password">
+    <button id="gatebtn">開く</button>
+    <div class="err" id="gateerr"></div>
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <h1>販売登録<span class="en">sales &rarr; 1 LINE商品</span></h1>
+    <nav>
+      <a href="index.html">LINE GIFT 商品リスト</a>
+      <a href="manage.html">社内 商品マスター</a>
+      <a href="sales.html" class="active">販売登録</a>
+    </nav>
+    <div class="meta">
+      1つの販売登録＝LINEの1出品。社内商品を「×数量」で組み立て、LINE商品IDを1対1で紐付けます。<br>
+      販売登録 <b id="count">-</b> 件 ・ LINE商品 <b id="linetotal">-</b> 件中 <b id="linked">-</b> 件に紐付け済み
+      <span id="dupewarn" style="color:var(--err)"></span>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="販売ID・販売名・LINE商品で検索…">
+      <button id="addsale" class="primary">＋ 販売登録を追加</button>
+      <button id="export" class="ghost">JSONを書き出す</button>
+      <button id="copy" class="ghost">コピー</button>
+      <button id="reload" class="ghost">再読込</button>
+      <span class="save-state" id="savestate"></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="banner" id="banner">
+    <span>この端末での編集内容を表示しています（共有マスターには未反映）。</span>
+    <button id="discard">端末の変更を破棄</button>
+  </div>
+  <div id="list"></div>
+  <div class="empty" id="empty" style="display:none">
+    まだ販売登録がありません。「＋ 販売登録を追加」から作成してください。
+  </div>
+</main>
+
+<script>
+const PW_HASH = "86138699a5c3861fd957004d5c07c6466e7470eb0cffd2152d928a5bcf9a738a";
+const GATE_KEY = "bijoukan_gate_ok";
+const STORE_KEY = "sales_v1";
+let DATA = [];     // 販売登録の配列
+let BASE = [];     // 社内商品（構成品ドロップダウン用）
+let LINE = [];     // LINE GIFT 商品（1対1紐付け用）
+let dirty = false;
+
+async function sha256(str){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function unlock(){ document.getElementById("gate").style.display="none"; document.body.classList.remove("locked"); init(); }
+async function tryUnlock(){ const pw=document.getElementById("gatepw").value; if(await sha256(pw)===PW_HASH){ sessionStorage.setItem(GATE_KEY,"1"); unlock(); } else { document.getElementById("gateerr").textContent="合言葉が違います"; document.getElementById("gatepw").select(); } }
+document.getElementById("gatebtn").addEventListener("click",tryUnlock);
+document.getElementById("gatepw").addEventListener("keydown",e=>{ if(e.key==="Enter") tryUnlock(); });
+
+async function init(){
+  // 社内商品マスター（構成品用）— 端末編集があればそれを優先
+  try {
+    const saved = localStorage.getItem("internal_products_v1");
+    if (saved) BASE = JSON.parse(saved);
+    else BASE = (await (await fetch("internal_products.json?_="+Date.now())).json()).products || [];
+  } catch { BASE = []; }
+  // LINE GIFT 商品
+  try {
+    const d = await (await fetch("products.json?_="+Date.now())).json();
+    LINE = (d.products||[]).slice().sort((a,b)=>(a.name_full||a.name||"").localeCompare(b.name_full||b.name||"","ja"));
+  } catch { LINE = []; }
+  // 販売登録
+  const s = localStorage.getItem(STORE_KEY);
+  if (s){ try { DATA = JSON.parse(s); dirty = true; } catch { DATA = null; } }
+  if (!s || !Array.isArray(DATA)){ await loadMaster(); dirty = false; }
+  render(); updateBanner();
+}
+async function loadMaster(){
+  try { DATA = (await (await fetch("sales.json?_="+Date.now())).json()).sales || []; }
+  catch { DATA = []; }
+}
+function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function baseName(id){ const p=BASE.find(x=>x.id===id); return p?p.name:""; }
+
+function lineOptions(sel){
+  let o = '<option value="">（LINE商品を選択…）</option>';
+  for (const p of LINE){ const label=(p.name_full||p.name||"").slice(0,44);
+    o += `<option value="${esc(p.id)}"${p.id===sel?" selected":""}>${esc(label)}（${esc(p.id)}）</option>`; }
+  if (sel && !LINE.some(p=>p.id===sel)) o += `<option value="${esc(sel)}" selected>${esc(sel)}（一覧外）</option>`;
+  return o;
+}
+function baseOptions(sel){
+  let o = '<option value="">（商品を選択…）</option>';
+  for (const p of BASE){ o += `<option value="${esc(p.id)}"${p.id===sel?" selected":""}>${esc(p.name)}（${esc(p.id)}）</option>`; }
+  if (sel && !BASE.some(p=>p.id===sel)) o += `<option value="${esc(sel)}" selected>${esc(sel)}（マスター外）</option>`;
+  return o;
+}
+
+function lineIdCounts(){
+  const c = {}; DATA.forEach(s=>{ if(s.line_id) c[s.line_id]=(c[s.line_id]||0)+1; }); return c;
+}
+
+function render(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const list = document.getElementById("list"); list.innerHTML="";
+  const counts = lineIdCounts();
+  let dupes = 0;
+
+  DATA.forEach((s,si)=>{
+    const lp = LINE.find(x=>x.id===s.line_id);
+    const lineLabel = lp ? (lp.name_full||lp.name) : s.line_id;
+    const hay = [s.id,s.name,s.line_id,lineLabel,...(s.items||[]).map(it=>baseName(it.product_id))].join(" ").toLowerCase();
+    if (q && !hay.includes(q)) return;
+
+    const isDupe = s.line_id && counts[s.line_id] > 1;
+    if (isDupe) dupes++;
+    const items = (s.items||[]).map((it,ii)=>
+      `<div class="item">
+         <select data-si="${si}" data-ii="${ii}" data-if="product_id">${baseOptions(it.product_id)}</select>
+         <span class="times">×</span>
+         <input class="qty" type="number" min="1" value="${Number(it.qty)||1}" data-si="${si}" data-ii="${ii}" data-if="qty">
+         <button class="x" data-si="${si}" data-ii="${ii}" data-act="delitem" title="この構成品を削除">✕</button>
+       </div>`).join("");
+
+    let linkinfo, cls;
+    if (isDupe){ linkinfo = `⚠ このLINE商品は他の販売登録にも紐付いています（1対1にしてください）`; cls="dupe"; }
+    else if (lp){ linkinfo = `¥${Number(lp.price).toLocaleString('ja-JP')} / ${lp.in_stock?'販売中':'在庫なし'}`; cls=""; }
+    else if (s.line_id){ linkinfo = "（LINE一覧に見つかりません）"; cls="none"; }
+    else { linkinfo = "未紐付け"; cls="none"; }
+
+    const el = document.createElement("div");
+    el.className = "sale" + (isDupe?" dupe":"");
+    el.innerHTML =
+      `<div class="sale-head">
+         <input class="sid" value="${esc(s.id)}" data-si="${si}" data-f="id" placeholder="販売ID">
+         <input class="sname" value="${esc(s.name)}" data-si="${si}" data-f="name" placeholder="販売名（例: ボクソンドガ紅白セット）">
+         <button class="del" data-si="${si}" data-act="delsale">削除</button>
+       </div>
+       <div class="field">
+         <div class="flabel">対応するLINE GIFT商品（1対1）
+           <button class="additem" data-si="${si}" data-act="usename">LINE名を販売名に反映</button>
+         </div>
+         <div class="linkrow">
+           <select data-si="${si}" data-f="line_id">${lineOptions(s.line_id)}</select>
+           <span class="linkinfo ${cls}">${esc(linkinfo)}</span>
+         </div>
+       </div>
+       <div class="field">
+         <div class="flabel">構成品（社内商品 × 数量）</div>
+         <div class="items">${items || '<div class="linkinfo none">構成品がありません</div>'}
+           <button class="additem" data-si="${si}" data-act="additem">＋ 構成品を追加</button>
+         </div>
+       </div>
+       <div class="sale-foot">
+         <input class="memo" value="${esc(s.memo||"")}" data-si="${si}" data-f="memo" placeholder="メモ">
+       </div>`;
+    list.appendChild(el);
+  });
+
+  const linkedCount = Object.keys(counts).length;
+  document.getElementById("count").textContent = DATA.length;
+  document.getElementById("linetotal").textContent = LINE.length;
+  document.getElementById("linked").textContent = linkedCount;
+  document.getElementById("dupewarn").textContent = dupes ? `　⚠ 重複紐付け ${dupes} 件` : "";
+  document.getElementById("empty").style.display = DATA.length ? "none" : "block";
+}
+
+// テキスト入力（フォーカス保持のため再描画しない）
+document.getElementById("list").addEventListener("input",e=>{
+  const el=e.target, si=el.dataset.si; if(si==null) return;
+  const s=DATA[si];
+  if (el.dataset.if){ // 構成品
+    const it=s.items[el.dataset.ii];
+    if (el.dataset.if==="qty") it.qty=Math.max(1,parseInt(el.value||"1",10)||1);
+    else it.product_id=el.value;
+    save();
+    if (el.tagName==="SELECT") render();
+  } else if (el.dataset.f){
+    s[el.dataset.f]=el.value; save();
+    if (el.dataset.f==="line_id") render(); // 紐付け情報・重複を更新
+  }
+});
+// ボタン類
+document.getElementById("list").addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const si=+b.dataset.si, s=DATA[si], act=b.dataset.act;
+  if (act==="delsale"){ if(confirm(`${s.id||""} ${s.name||""} を削除しますか？`)){ DATA.splice(si,1); save(); render(); } }
+  else if (act==="additem"){ s.items=s.items||[]; s.items.push({product_id:"",qty:1}); save(); render(); }
+  else if (act==="delitem"){ s.items.splice(+b.dataset.ii,1); save(); render(); }
+  else if (act==="usename"){ const lp=LINE.find(x=>x.id===s.line_id); if(lp){ s.name=(lp.name_full||lp.name); save(); render(); } else alert("先にLINE商品を選択してください。"); }
+});
+
+function nextSaleId(){ let m=0; for(const s of DATA){ const x=/^SALE(\d+)$/.exec(s.id||""); if(x) m=Math.max(m,parseInt(x[1],10)); } return "SALE"+String(m+1).padStart(4,"0"); }
+document.getElementById("addsale").addEventListener("click",()=>{
+  DATA.unshift({id:nextSaleId(),name:"",line_id:"",items:[{product_id:"",qty:1}],memo:""});
+  document.getElementById("q").value=""; save(); render();
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+
+function save(){ localStorage.setItem(STORE_KEY,JSON.stringify(DATA)); dirty=true; updateBanner();
+  const s=document.getElementById("savestate"); s.textContent="端末に保存済み ✓"; clearTimeout(save._t); save._t=setTimeout(()=>s.textContent="",1500); }
+function updateBanner(){ document.getElementById("banner").style.display=dirty?"flex":"none"; }
+function buildJSON(){ return JSON.stringify({ updated_at:new Date().toISOString().slice(0,10),
+  note:"販売登録。1販売=LINE 1出品。items=構成品(社内商品ID×数量)。line_id=LINE GIFT商品ID(1対1)。",
+  sales:DATA.map(s=>({ id:s.id, name:s.name, line_id:s.line_id||"",
+    items:(s.items||[]).map(it=>({product_id:it.product_id,qty:Number(it.qty)||1})), memo:s.memo||"" })) },null,2); }
+document.getElementById("export").addEventListener("click",()=>{ const b=new Blob([buildJSON()+"\n"],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="sales.json"; a.click(); URL.revokeObjectURL(a.href); });
+document.getElementById("copy").addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText(buildJSON()); alert("JSONをコピーしました。"); }catch{ prompt("コピーしてください:",buildJSON()); } });
+document.getElementById("reload").addEventListener("click",async()=>{ if(dirty&&!confirm("端末の編集を破棄して共有マスターを読み込みますか？")) return; localStorage.removeItem(STORE_KEY); await loadMaster(); dirty=false; render(); updateBanner(); });
+document.getElementById("discard").addEventListener("click",async()=>{ if(!confirm("この端末の編集内容を破棄して共有マスターに戻しますか？")) return; localStorage.removeItem(STORE_KEY); await loadMaster(); dirty=false; render(); updateBanner(); });
+document.getElementById("q").addEventListener("input",render);
+
+if (sessionStorage.getItem(GATE_KEY)==="1") unlock();
+else document.getElementById("gatepw").focus();
+</script>
+</body>
+</html>

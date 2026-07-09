@@ -4,72 +4,56 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>社内 商品管理 | 美酒館トラッカー</title>
+<title>社内 商品マスター | 美酒館トラッカー</title>
 <style>
   :root {
     --bg: #f6f5f3; --card: #ffffff; --text: #1c1a17; --muted: #706a62;
-    --line: #e4e0da; --accent: #7b1e2b; --accent-soft: #f3e7e6;
-    --new: #1a7f5a; --new-soft: #e4f4ec; --warn: #b8791b; --warn-soft: #f8efdc;
+    --line: #e4e0da; --accent: #7b1e2b; --warn: #b8791b; --warn-soft: #f8efdc;
     --shadow: 0 1px 3px rgba(0,0,0,.06);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #17140f; --card: #221e18; --text: #efe9df; --muted: #a49c8f;
-      --line: #34302a; --accent: #e0899a; --accent-soft: #3a2229;
-      --new: #4fd6a0; --new-soft: #17352a; --warn: #e0b463; --warn-soft: #35291a;
+      --line: #34302a; --accent: #e0899a; --warn: #e0b463; --warn-soft: #35291a;
       --shadow: 0 1px 3px rgba(0,0,0,.4);
     }
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
+  body { margin: 0; background: var(--bg); color: var(--text);
     font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
-    line-height: 1.6; -webkit-font-smoothing: antialiased;
-  }
+    line-height: 1.6; -webkit-font-smoothing: antialiased; }
   header { padding: 20px 18px 14px; border-bottom: 1px solid var(--line); background: var(--card); }
-  .wrap { max-width: 1200px; margin: 0 auto; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
   h1 { font-size: 1.2rem; margin: 0 0 4px; }
   h1 .en { color: var(--muted); font-weight: 400; font-size: .78rem; margin-left: 6px; }
-  nav { display: flex; gap: 14px; margin: 8px 0 2px; font-size: .86rem; }
+  nav { display: flex; gap: 14px; margin: 8px 0 2px; font-size: .86rem; flex-wrap: wrap; }
   nav a { color: var(--muted); text-decoration: none; padding-bottom: 3px; }
   nav a.active { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 600; }
   .meta { color: var(--muted); font-size: .82rem; margin-top: 6px; }
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
-  input[type="search"] {
-    flex: 1; min-width: 160px; font-size: .9rem; padding: 8px 11px;
-    border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--text);
-  }
-  button {
-    font-size: .85rem; font-weight: 600; padding: 8px 13px; border: 1px solid var(--line);
-    border-radius: 9px; background: var(--card); color: var(--text); cursor: pointer;
-  }
+  input[type="search"] { flex: 1; min-width: 160px; font-size: .9rem; padding: 8px 11px;
+    border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--text); }
+  button { font-size: .85rem; font-weight: 600; padding: 8px 13px; border: 1px solid var(--line);
+    border-radius: 9px; background: var(--card); color: var(--text); cursor: pointer; }
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   button.ghost { background: transparent; }
   .save-state { font-size: .78rem; color: var(--muted); margin-left: auto; }
-  main { max-width: 1200px; margin: 0 auto; padding: 14px 14px 70px; }
-  .banner {
-    background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn);
+  main { max-width: 1100px; margin: 0 auto; padding: 14px 14px 70px; }
+  .banner { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn);
     border-radius: 10px; padding: 9px 13px; font-size: .82rem; margin-bottom: 14px;
-    display: none; align-items: center; gap: 10px; justify-content: space-between;
-  }
+    display: none; align-items: center; gap: 10px; justify-content: space-between; }
   .banner button { border-color: var(--warn); color: var(--warn); background: transparent; padding: 4px 10px; font-size: .78rem; }
   .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
-  table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: .85rem; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .88rem; }
   th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
-  th { background: var(--bg); color: var(--muted); font-weight: 600; font-size: .78rem; white-space: nowrap; position: sticky; top: 0; }
-  td .idcell { font-family: ui-monospace, monospace; font-weight: 600; }
-  td input, td select {
-    width: 100%; font-size: .85rem; padding: 6px 8px; border: 1px solid var(--line);
-    border-radius: 7px; background: var(--bg); color: var(--text);
-  }
-  td.stock input { width: 74px; text-align: center; }
-  td.id input { width: 96px; font-family: ui-monospace, monospace; }
+  th { background: var(--bg); color: var(--muted); font-weight: 600; font-size: .78rem; white-space: nowrap; }
+  td input { width: 100%; font-size: .88rem; padding: 6px 8px; border: 1px solid var(--line);
+    border-radius: 7px; background: var(--bg); color: var(--text); }
+  td.stock input { width: 80px; text-align: center; }
+  td.id input { width: 100px; font-family: ui-monospace, monospace; }
   .stock0 input { color: #c0392b; border-color: #c0392b; }
-  .linkinfo { font-size: .72rem; color: var(--new); margin-top: 3px; }
-  .linkinfo.none { color: var(--muted); }
-  .del { color: #c0392b; border: none; background: transparent; font-size: 1rem; padding: 4px 8px; }
+  .del { color: #c0392b; border: none; background: transparent; font-size: 1rem; padding: 4px 8px; cursor: pointer; }
   tfoot td { color: var(--muted); font-weight: 600; background: var(--bg); }
-  /* gate */
   #gate { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; }
   #gate .box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 30px 26px; width: 100%; max-width: 360px; text-align: center; }
   #gate h2 { margin: 0 0 6px; font-size: 1.05rem; }
@@ -83,7 +67,7 @@
 <body class="locked">
 <div id="gate">
   <div class="box">
-    <h2>社内 商品管理</h2>
+    <h2>社内 商品マスター</h2>
     <p>閲覧には合言葉が必要です</p>
     <input type="password" id="gatepw" placeholder="合言葉を入力" autocomplete="current-password">
     <button id="gatebtn">開く</button>
@@ -93,17 +77,19 @@
 
 <header>
   <div class="wrap">
-    <h1>社内 商品管理<span class="en">Romuan internal products</span></h1>
+    <h1>社内 商品マスター<span class="en">base products (在庫単位)</span></h1>
     <nav>
       <a href="index.html">LINE GIFT 商品リスト</a>
-      <a href="manage.html" class="active">社内 商品管理</a>
+      <a href="manage.html" class="active">社内 商品マスター</a>
+      <a href="sales.html">販売登録</a>
     </nav>
     <div class="meta">
+      在庫を持つ最小単位の商品です。セットや複数本の出品は「販売登録」で組み立てます。<br>
       <span id="count">-</span> ・ 合計在庫 <b id="totalstock">-</b>
     </div>
     <div class="toolbar">
       <input type="search" id="q" placeholder="社内ID・商品名で検索…">
-      <button id="addrow" class="ghost">＋ 行を追加</button>
+      <button id="addrow" class="ghost">＋ 商品を追加</button>
       <button id="export" class="primary">JSONを書き出す</button>
       <button id="copy" class="ghost">コピー</button>
       <button id="reload" class="ghost">マスター再読込</button>
@@ -120,22 +106,11 @@
   <div class="tablewrap">
     <table>
       <thead>
-        <tr>
-          <th>社内ID</th>
-          <th>商品名</th>
-          <th>在庫</th>
-          <th>対応するLINE GIFT商品（任意）</th>
-          <th>メモ</th>
-          <th></th>
-        </tr>
+        <tr><th>社内ID</th><th>商品名</th><th>在庫</th><th>メモ</th><th></th></tr>
       </thead>
       <tbody id="tbody"></tbody>
       <tfoot>
-        <tr>
-          <td colspan="2">合計</td>
-          <td class="stock"><span id="footstock">0</span></td>
-          <td colspan="3"></td>
-        </tr>
+        <tr><td colspan="2">合計</td><td class="stock"><span id="footstock">0</span></td><td colspan="2"></td></tr>
       </tfoot>
     </table>
   </div>
@@ -145,189 +120,76 @@
 const PW_HASH = "86138699a5c3861fd957004d5c07c6466e7470eb0cffd2152d928a5bcf9a738a";
 const GATE_KEY = "bijoukan_gate_ok";
 const STORE_KEY = "internal_products_v1";
+let DATA = [], dirty = false;
 
-let DATA = [];          // 作業中の社内商品配列
-let LINE = [];          // LINE GIFT 商品（紐付け用）
-let dirty = false;      // マスターと異なる編集があるか
+async function sha256(str){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function unlock(){ document.getElementById("gate").style.display="none"; document.body.classList.remove("locked"); init(); }
+async function tryUnlock(){ const pw=document.getElementById("gatepw").value; if(await sha256(pw)===PW_HASH){ sessionStorage.setItem(GATE_KEY,"1"); unlock(); } else { document.getElementById("gateerr").textContent="合言葉が違います"; document.getElementById("gatepw").select(); } }
+document.getElementById("gatebtn").addEventListener("click",tryUnlock);
+document.getElementById("gatepw").addEventListener("keydown",e=>{ if(e.key==="Enter") tryUnlock(); });
 
-/* ---------- 合言葉ゲート ---------- */
-async function sha256(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
-}
-function unlock() {
-  document.getElementById("gate").style.display = "none";
-  document.body.classList.remove("locked");
-  init();
-}
-async function tryUnlock() {
-  const pw = document.getElementById("gatepw").value;
-  if (await sha256(pw) === PW_HASH) { sessionStorage.setItem(GATE_KEY, "1"); unlock(); }
-  else { document.getElementById("gateerr").textContent = "合言葉が違います"; document.getElementById("gatepw").select(); }
-}
-document.getElementById("gatebtn").addEventListener("click", tryUnlock);
-document.getElementById("gatepw").addEventListener("keydown", e => { if (e.key === "Enter") tryUnlock(); });
-
-/* ---------- データ読み込み ---------- */
-async function init() {
-  // LINE GIFT 商品（紐付けドロップダウン用）
-  try {
-    const r = await fetch("products.json?_=" + Date.now());
-    const d = await r.json();
-    LINE = (d.products || []).slice().sort((a,b) =>
-      (a.name_full||a.name||"").localeCompare(b.name_full||b.name||"", "ja"));
-  } catch (e) { LINE = []; }
-
-  // 社内商品：端末の編集があればそれを、なければマスターを使う
+async function init(){
   const saved = localStorage.getItem(STORE_KEY);
-  if (saved) {
-    try { DATA = JSON.parse(saved); dirty = true; } catch { DATA = null; }
-  }
-  if (!saved || !Array.isArray(DATA)) { await loadMaster(); dirty = false; }
-
-  render();
-  updateBanner();
+  if (saved){ try { DATA = JSON.parse(saved); dirty = true; } catch { DATA = null; } }
+  if (!saved || !Array.isArray(DATA)){ await loadMaster(); dirty = false; }
+  render(); updateBanner();
 }
-async function loadMaster() {
-  const r = await fetch("internal_products.json?_=" + Date.now());
-  const d = await r.json();
-  DATA = (d.products || []).map(p => ({
-    id: p.id || "", name: p.name || "", stock: Number(p.stock) || 0,
-    line_id: p.line_id || "", memo: p.memo || ""
-  }));
+async function loadMaster(){
+  const d = await (await fetch("internal_products.json?_="+Date.now())).json();
+  DATA = (d.products||[]).map(p=>({ id:p.id||"", name:p.name||"", stock:Number(p.stock)||0, memo:p.memo||"" }));
 }
+function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-/* ---------- 描画 ---------- */
-function esc(s){ return (s||"").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-function lineOptions(selected) {
-  let opts = '<option value="">（未紐付け）</option>';
-  for (const p of LINE) {
-    const label = (p.name_full || p.name || "").slice(0, 40);
-    const sel = p.id === selected ? " selected" : "";
-    opts += `<option value="${esc(p.id)}"${sel}>${esc(label)}（${esc(p.id)}）</option>`;
-  }
-  // マスターに存在しないIDが入っていた場合も表示
-  if (selected && !LINE.some(p => p.id === selected)) {
-    opts += `<option value="${esc(selected)}" selected>${esc(selected)}（一覧外）</option>`;
-  }
-  return opts;
-}
-
-function render() {
+function render(){
   const q = document.getElementById("q").value.trim().toLowerCase();
-  const tb = document.getElementById("tbody");
-  tb.innerHTML = "";
-  let shown = 0, totalStock = 0;
-
-  DATA.forEach((p, i) => {
-    totalStock += Number(p.stock) || 0;
-    if (q && ![p.id, p.name, p.memo].join(" ").toLowerCase().includes(q)) return;
+  const tb = document.getElementById("tbody"); tb.innerHTML="";
+  let shown=0, total=0;
+  DATA.forEach((p,i)=>{
+    total += Number(p.stock)||0;
+    if (q && ![p.id,p.name,p.memo].join(" ").toLowerCase().includes(q)) return;
     shown++;
-    const tr = document.createElement("tr");
-    const linked = LINE.find(x => x.id === p.line_id);
-    tr.innerHTML = `
-      <td class="id"><input value="${esc(p.id)}" data-i="${i}" data-f="id"></td>
-      <td><input value="${esc(p.name)}" data-i="${i}" data-f="name"></td>
-      <td class="stock ${(Number(p.stock)||0)===0?'stock0':''}"><input type="number" min="0" value="${Number(p.stock)||0}" data-i="${i}" data-f="stock"></td>
-      <td>
-        <select data-i="${i}" data-f="line_id">${lineOptions(p.line_id)}</select>
-        <div class="linkinfo ${linked?'':'none'}">${linked ? '¥'+Number(linked.price).toLocaleString('ja-JP')+' / '+(linked.in_stock?'販売中':'在庫なし') : '未紐付け'}</div>
-      </td>
-      <td><input value="${esc(p.memo)}" data-i="${i}" data-f="memo" placeholder="—"></td>
-      <td><button class="del" data-i="${i}" title="削除">🗑</button></td>`;
+    const tr=document.createElement("tr");
+    tr.innerHTML =
+      `<td class="id"><input value="${esc(p.id)}" data-i="${i}" data-f="id"></td>`+
+      `<td><input value="${esc(p.name)}" data-i="${i}" data-f="name"></td>`+
+      `<td class="stock ${(Number(p.stock)||0)===0?'stock0':''}"><input type="number" min="0" value="${Number(p.stock)||0}" data-i="${i}" data-f="stock"></td>`+
+      `<td><input value="${esc(p.memo)}" data-i="${i}" data-f="memo" placeholder="—"></td>`+
+      `<td><button class="del" data-i="${i}" title="削除">🗑</button></td>`;
     tb.appendChild(tr);
   });
-
   document.getElementById("count").textContent = `${shown} / ${DATA.length} 件`;
-  document.getElementById("totalstock").textContent = totalStock;
-  document.getElementById("footstock").textContent = totalStock;
+  document.getElementById("totalstock").textContent = total;
+  document.getElementById("footstock").textContent = total;
 }
 
-/* ---------- 編集ハンドラ ---------- */
-document.getElementById("tbody").addEventListener("input", e => {
-  const el = e.target;
-  const i = el.dataset.i, f = el.dataset.f;
-  if (i == null) return;
-  let v = el.value;
-  if (f === "stock") v = Math.max(0, parseInt(v || "0", 10) || 0);
-  DATA[i][f] = v;
-  if (f === "stock" || f === "line_id") render(); // 合計・紐付け表示を更新
-  save();
+document.getElementById("tbody").addEventListener("input",e=>{
+  const el=e.target, i=el.dataset.i, f=el.dataset.f; if(i==null) return;
+  let v=el.value; if(f==="stock") v=Math.max(0,parseInt(v||"0",10)||0);
+  DATA[i][f]=v; if(f==="stock") render(); save();
 });
-document.getElementById("tbody").addEventListener("click", e => {
-  if (!e.target.classList.contains("del")) return;
-  const i = +e.target.dataset.i;
-  if (confirm(`${DATA[i].id} ${DATA[i].name} を削除しますか？`)) {
-    DATA.splice(i, 1); save(); render();
-  }
+document.getElementById("tbody").addEventListener("click",e=>{
+  if(!e.target.classList.contains("del")) return;
+  const i=+e.target.dataset.i;
+  if(confirm(`${DATA[i].id} ${DATA[i].name} を削除しますか？`)){ DATA.splice(i,1); save(); render(); }
+});
+function nextId(){ let m=0; for(const p of DATA){ const x=/^ROM(\d+)$/.exec(p.id||""); if(x) m=Math.max(m,parseInt(x[1],10)); } return "ROM"+String(m+1).padStart(5,"0"); }
+document.getElementById("addrow").addEventListener("click",()=>{
+  DATA.push({id:nextId(),name:"",stock:0,memo:""}); document.getElementById("q").value=""; save(); render();
+  const ins=document.querySelectorAll('#tbody tr:last-child input'); if(ins[1]) ins[1].focus();
 });
 
-function nextId() {
-  let max = 0;
-  for (const p of DATA) {
-    const m = /^ROM(\d+)$/.exec(p.id || "");
-    if (m) max = Math.max(max, parseInt(m[1], 10));
-  }
-  return "ROM" + String(max + 1).padStart(5, "0");
-}
-document.getElementById("addrow").addEventListener("click", () => {
-  DATA.push({ id: nextId(), name: "", stock: 0, line_id: "", memo: "" });
-  document.getElementById("q").value = "";
-  save(); render();
-  const inputs = document.querySelectorAll('#tbody tr:last-child input');
-  if (inputs[1]) inputs[1].focus();
-});
+function save(){ localStorage.setItem(STORE_KEY,JSON.stringify(DATA)); dirty=true; updateBanner();
+  const s=document.getElementById("savestate"); s.textContent="端末に保存済み ✓"; clearTimeout(save._t); save._t=setTimeout(()=>s.textContent="",1500); }
+function updateBanner(){ document.getElementById("banner").style.display=dirty?"flex":"none"; }
+function buildJSON(){ return JSON.stringify({ updated_at:new Date().toISOString().slice(0,10),
+  note:"弊社内 商品マスター（在庫単位）。stock=在庫数。", products:DATA.map(p=>({id:p.id,name:p.name,stock:Number(p.stock)||0,memo:p.memo||""})) },null,2); }
+document.getElementById("export").addEventListener("click",()=>{ const b=new Blob([buildJSON()+"\n"],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="internal_products.json"; a.click(); URL.revokeObjectURL(a.href); });
+document.getElementById("copy").addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText(buildJSON()); alert("JSONをコピーしました。"); }catch{ prompt("コピーしてください:",buildJSON()); } });
+document.getElementById("reload").addEventListener("click",async()=>{ if(dirty&&!confirm("端末の編集を破棄して共有マスターを読み込みますか？")) return; localStorage.removeItem(STORE_KEY); await loadMaster(); dirty=false; render(); updateBanner(); });
+document.getElementById("discard").addEventListener("click",async()=>{ if(!confirm("この端末の編集内容を破棄して共有マスターに戻しますか？")) return; localStorage.removeItem(STORE_KEY); await loadMaster(); dirty=false; render(); updateBanner(); });
+document.getElementById("q").addEventListener("input",render);
 
-/* ---------- 保存・書き出し ---------- */
-function save() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(DATA));
-  dirty = true;
-  updateBanner();
-  const s = document.getElementById("savestate");
-  s.textContent = "端末に保存済み ✓";
-  clearTimeout(save._t);
-  save._t = setTimeout(() => (s.textContent = ""), 1500);
-}
-function updateBanner() {
-  document.getElementById("banner").style.display = dirty ? "flex" : "none";
-}
-function buildJSON() {
-  return JSON.stringify({
-    updated_at: new Date().toISOString().slice(0, 10),
-    note: "弊社内 商品マスター。stock=在庫数。line_id=対応するLINE GIFT商品ID。",
-    products: DATA.map(p => ({
-      id: p.id, name: p.name, stock: Number(p.stock) || 0,
-      line_id: p.line_id || "", memo: p.memo || ""
-    }))
-  }, null, 2);
-}
-document.getElementById("export").addEventListener("click", () => {
-  const blob = new Blob([buildJSON() + "\n"], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "internal_products.json";
-  a.click();
-  URL.revokeObjectURL(a.href);
-});
-document.getElementById("copy").addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText(buildJSON()); alert("JSONをコピーしました。"); }
-  catch { prompt("コピーしてください:", buildJSON()); }
-});
-document.getElementById("reload").addEventListener("click", async () => {
-  if (dirty && !confirm("端末の編集を破棄して、共有マスター(GitHub)を読み込みますか？")) return;
-  localStorage.removeItem(STORE_KEY);
-  await loadMaster(); dirty = false; render(); updateBanner();
-});
-document.getElementById("discard").addEventListener("click", async () => {
-  if (!confirm("この端末の編集内容を破棄して、共有マスターに戻しますか？")) return;
-  localStorage.removeItem(STORE_KEY);
-  await loadMaster(); dirty = false; render(); updateBanner();
-});
-document.getElementById("q").addEventListener("input", render);
-
-/* ---------- 起動 ---------- */
-if (sessionStorage.getItem(GATE_KEY) === "1") unlock();
+if (sessionStorage.getItem(GATE_KEY)==="1") unlock();
 else document.getElementById("gatepw").focus();
 </script>
 </body>
