@@ -1,0 +1,20 @@
+{
+  "updated_at": "2026-07-09",
+  "note": "弊社内 商品マスター。stock=在庫数。line_id=対応するLINE GIFT商品ID（任意・後で紐付け）。",
+  "products": [
+    { "id": "ROM00001", "name": "ボクソンドガ　白", "stock": 5, "line_id": "", "memo": "" },
+    { "id": "ROM00002", "name": "ボクソンドガ　赤", "stock": 1, "line_id": "", "memo": "" },
+    { "id": "ROM00003", "name": "メリマッコリ　白", "stock": 1, "line_id": "", "memo": "" },
+    { "id": "ROM00004", "name": "メリマッコリ　赤", "stock": 1, "line_id": "", "memo": "" },
+    { "id": "ROM00005", "name": "きぬさら　白", "stock": 2, "line_id": "", "memo": "" },
+    { "id": "ROM00006", "name": "ブランコ　マッコリ　SOON", "stock": 0, "line_id": "", "memo": "" },
+    { "id": "ROM00007", "name": "ボクソンドガ SuperDry　白", "stock": 1, "line_id": "", "memo": "" },
+    { "id": "ROM00008", "name": "韓国プレミアム生マッコリ「璄濁酒」", "stock": 7, "line_id": "", "memo": "" },
+    { "id": "ROM00012", "name": "韓国プレミアム生マッコリ「璄濁酒」ロゼ", "stock": 38, "line_id": "", "memo": "" },
+    { "id": "ROM00016", "name": "ハッピーどぶろく　穂の恵139", "stock": 3, "line_id": "", "memo": "" },
+    { "id": "ROM00017", "name": "something happy 菅浦の八朔142", "stock": 5, "line_id": "", "memo": "" },
+    { "id": "ROM00018", "name": "something happy うきうきホップ144", "stock": 11, "line_id": "", "memo": "" },
+    { "id": "ROM00019", "name": "NERD12", "stock": 13, "line_id": "", "memo": "" },
+    { "id": "ROM00020", "name": "善山スイート", "stock": 6, "line_id": "", "memo": "" }
+  ]
+}

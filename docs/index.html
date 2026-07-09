@@ -32,6 +32,9 @@
   .wrap { max-width: 1080px; margin: 0 auto; }
   h1 { font-size: 1.25rem; margin: 0 0 4px; letter-spacing: .02em; }
   h1 .en { color: var(--muted); font-weight: 400; font-size: .8rem; margin-left: 6px; }
+  nav { display: flex; gap: 14px; margin: 8px 0 4px; font-size: .86rem; }
+  nav a { color: var(--muted); text-decoration: none; padding-bottom: 3px; }
+  nav a.active { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 600; }
   .meta { color: var(--muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: 6px 16px; }
   .meta a { color: var(--accent); text-decoration: none; }
   .controls {
@@ -112,6 +115,10 @@
 <header>
   <div class="wrap">
     <h1>美酒館 商品リスト<span class="en">LINE GIFT tracker</span></h1>
+    <nav>
+      <a href="index.html" class="active">LINE GIFT 商品リスト</a>
+      <a href="manage.html">社内 商品管理</a>
+    </nav>
     <div class="meta">
       <span id="updated">読み込み中…</span>
       <span>販売中 <b id="total">-</b> 件</span>
