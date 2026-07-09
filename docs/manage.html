@@ -7,60 +7,63 @@
 <title>社内 商品マスター | 美酒館トラッカー</title>
 <style>
   :root {
-    --bg: #f6f5f3; --card: #ffffff; --text: #1c1a17; --muted: #706a62;
-    --line: #e4e0da; --accent: #7b1e2b; --warn: #b8791b; --warn-soft: #f8efdc;
-    --shadow: 0 1px 3px rgba(0,0,0,.06);
+    --bg: #eceae6; --surface: #ffffff; --surface2: #f6f4f0; --text: #1c1a17; --muted: #78716a;
+    --line: #ddd8d0; --accent: #7b1e2b; --accent2: #a83246;
+    --ok: #1a7f5a; --err: #c0392b; --warn: #b8791b;
+    --shadow: 0 2px 6px rgba(60,40,30,.10), 0 1px 2px rgba(60,40,30,.06);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #17140f; --card: #221e18; --text: #efe9df; --muted: #a49c8f;
-      --line: #34302a; --accent: #e0899a; --warn: #e0b463; --warn-soft: #35291a;
-      --shadow: 0 1px 3px rgba(0,0,0,.4);
+      --bg: #13110d; --surface: #24201a; --surface2: #2d2822; --text: #efe9df; --muted: #a49c8f;
+      --line: #3a352e; --accent: #e0899a; --accent2: #e0899a;
+      --ok: #4fd6a0; --err: #e08a7d; --warn: #e0b463;
+      --shadow: 0 2px 8px rgba(0,0,0,.4);
     }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
     font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
     line-height: 1.6; -webkit-font-smoothing: antialiased; }
-  header { padding: 20px 18px 14px; border-bottom: 1px solid var(--line); background: var(--card); }
-  .wrap { max-width: 1100px; margin: 0 auto; }
+  header { padding: 18px 18px 14px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 20; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
   h1 { font-size: 1.2rem; margin: 0 0 4px; }
   h1 .en { color: var(--muted); font-weight: 400; font-size: .78rem; margin-left: 6px; }
   nav { display: flex; gap: 14px; margin: 8px 0 2px; font-size: .86rem; flex-wrap: wrap; }
   nav a { color: var(--muted); text-decoration: none; padding-bottom: 3px; }
   nav a.active { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 600; }
   .meta { color: var(--muted); font-size: .82rem; margin-top: 6px; }
+  .meta b { color: var(--text); }
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
   input[type="search"] { flex: 1; min-width: 160px; font-size: .9rem; padding: 8px 11px;
-    border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--text); }
+    border: 1px solid var(--line); border-radius: 9px; background: var(--surface2); color: var(--text); }
   button { font-size: .85rem; font-weight: 600; padding: 8px 13px; border: 1px solid var(--line);
-    border-radius: 9px; background: var(--card); color: var(--text); cursor: pointer; }
+    border-radius: 9px; background: var(--surface); color: var(--text); cursor: pointer; }
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   button.ghost { background: transparent; }
-  .save-state { font-size: .78rem; color: var(--muted); margin-left: auto; }
-  main { max-width: 1100px; margin: 0 auto; padding: 14px 14px 70px; }
-  .banner { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn);
-    border-radius: 10px; padding: 9px 13px; font-size: .82rem; margin-bottom: 14px;
-    display: none; align-items: center; gap: 10px; justify-content: space-between; }
-  .banner button { border-color: var(--warn); color: var(--warn); background: transparent; padding: 4px 10px; font-size: .78rem; }
-  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
-  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .88rem; }
-  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
-  th { background: var(--bg); color: var(--muted); font-weight: 600; font-size: .78rem; white-space: nowrap; }
-  td input { width: 100%; font-size: .88rem; padding: 6px 8px; border: 1px solid var(--line);
-    border-radius: 7px; background: var(--bg); color: var(--text); }
-  td.stock input { width: 80px; text-align: center; }
-  td.id input { width: 100px; font-family: ui-monospace, monospace; }
-  .stock0 input { color: #c0392b; border-color: #c0392b; }
-  .del { color: #c0392b; border: none; background: transparent; font-size: 1rem; padding: 4px 8px; cursor: pointer; }
-  tfoot td { color: var(--muted); font-weight: 600; background: var(--bg); }
+  .sync { font-size: .78rem; margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .sync.ok .dot { background: var(--ok); } .sync.saving .dot { background: var(--warn); } .sync.err .dot { background: var(--err); }
+  main { max-width: 1000px; margin: 0 auto; padding: 16px 14px 80px; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 560px; font-size: .9rem; }
+  th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+  thead th { background: var(--surface2); color: var(--muted); font-weight: 700; font-size: .76rem; white-space: nowrap; position: sticky; top: 0; }
+  tbody tr:nth-child(even) td { background: var(--surface2); }
+  tbody tr:hover td { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+  td input { width: 100%; font-size: .9rem; padding: 7px 9px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--surface); color: var(--text); }
+  td.stock input { width: 84px; text-align: center; font-weight: 700; }
+  td.id input { width: 104px; font-family: ui-monospace, monospace; }
+  .stock0 input { color: var(--err); border-color: var(--err); }
+  .del { color: var(--err); border: none; background: transparent; font-size: 1rem; padding: 4px 8px; cursor: pointer; }
+  tfoot td { color: var(--muted); font-weight: 700; background: var(--surface2); }
   #gate { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; }
-  #gate .box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 30px 26px; width: 100%; max-width: 360px; text-align: center; }
+  #gate .box { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 30px 26px; width: 100%; max-width: 360px; text-align: center; }
   #gate h2 { margin: 0 0 6px; font-size: 1.05rem; }
   #gate p { margin: 0 0 18px; color: var(--muted); font-size: .82rem; }
-  #gate input { width: 100%; font-size: 1rem; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); text-align: center; margin-bottom: 12px; }
+  #gate input { width: 100%; font-size: 1rem; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface2); color: var(--text); text-align: center; margin-bottom: 12px; }
   #gate button { width: 100%; font-size: .95rem; padding: 11px; border: none; border-radius: 10px; background: var(--accent); color: #fff; }
-  #gate .err { color: #c0392b; font-size: .8rem; min-height: 1.2em; margin-top: 10px; }
+  #gate .err { color: var(--err); font-size: .8rem; min-height: 1.2em; margin-top: 10px; }
   body.locked { overflow: hidden; }
 </style>
 </head>
@@ -89,20 +92,14 @@
     </div>
     <div class="toolbar">
       <input type="search" id="q" placeholder="社内ID・商品名で検索…">
-      <button id="addrow" class="ghost">＋ 商品を追加</button>
-      <button id="export" class="primary">JSONを書き出す</button>
-      <button id="copy" class="ghost">コピー</button>
-      <button id="reload" class="ghost">マスター再読込</button>
-      <span class="save-state" id="savestate"></span>
+      <button id="addrow" class="primary">＋ 商品を追加</button>
+      <button id="reload" class="ghost">サーバから再読込</button>
+      <span class="sync" id="sync"><span class="dot"></span><span id="syncmsg">—</span></span>
     </div>
   </div>
 </header>
 
 <main>
-  <div class="banner" id="banner">
-    <span id="bannermsg">この端末での編集内容を表示しています（共有マスターには未反映）。</span>
-    <button id="discard">端末の変更を破棄</button>
-  </div>
   <div class="tablewrap">
     <table>
       <thead>
@@ -119,37 +116,59 @@
 <script>
 const PW_HASH = "86138699a5c3861fd957004d5c07c6466e7470eb0cffd2152d928a5bcf9a738a";
 const GATE_KEY = "bijoukan_gate_ok";
-const STORE_KEY = "internal_products_v1";
-let DATA = [], dirty = false;
+const CACHE_KEY = "products_cache_v2";
+const SB_URL = "https://qbfjeitlzrtazavklhde.supabase.co";
+const SB_KEY = "sb_publishable_gCDMwBOWaSwq6uh34lWRXA_rYQ6VptD";
+const SB_TABLE = SB_URL + "/rest/v1/romuan_products";
+let DATA = [];
+function sbHeaders(extra){ return Object.assign({ "apikey": SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json" }, extra||{}); }
 
 async function sha256(str){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
-function unlock(){ document.getElementById("gate").style.display="none"; document.body.classList.remove("locked"); init(); }
+function unlock(){ document.getElementById("gate").style.display="none"; document.body.classList.remove("locked"); loadServer(); }
 async function tryUnlock(){ const pw=document.getElementById("gatepw").value; if(await sha256(pw)===PW_HASH){ sessionStorage.setItem(GATE_KEY,"1"); unlock(); } else { document.getElementById("gateerr").textContent="合言葉が違います"; document.getElementById("gatepw").select(); } }
 document.getElementById("gatebtn").addEventListener("click",tryUnlock);
 document.getElementById("gatepw").addEventListener("keydown",e=>{ if(e.key==="Enter") tryUnlock(); });
 
-async function init(){
-  const saved = localStorage.getItem(STORE_KEY);
-  if (saved){ try { DATA = JSON.parse(saved); dirty = true; } catch { DATA = null; } }
-  if (!saved || !Array.isArray(DATA)){ await loadMaster(); dirty = false; }
-  render(); updateBanner();
-}
-async function loadMaster(){
-  const d = await (await fetch("internal_products.json?_="+Date.now())).json();
-  DATA = (d.products||[]).map(p=>({ id:p.id||"", name:p.name||"", stock:Number(p.stock)||0, memo:p.memo||"" }));
-}
-function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function setSync(state,msg){ document.getElementById("sync").className="sync "+state; document.getElementById("syncmsg").textContent=msg; }
 
+async function loadServer(){
+  setSync("saving","読み込み中…");
+  try {
+    const r = await fetch(SB_TABLE + "?select=*&order=position.asc,id.asc", { headers: sbHeaders() });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    DATA = (await r.json()).map(p=>({ id:p.id, name:p.name||"", stock:Number(p.stock)||0, memo:p.memo||"", position:p.position||0 }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(DATA));
+    setSync("ok","サーバと同期済み ✓");
+  } catch(e){
+    const c=localStorage.getItem(CACHE_KEY);
+    DATA = c ? JSON.parse(c) : [];
+    setSync("err","オフライン: キャッシュ表示中");
+  }
+  render();
+}
+const timers={};
+function scheduleSave(id){ clearTimeout(timers[id]); setSync("saving","保存中…"); timers[id]=setTimeout(()=>pushRow(id),500); }
+async function pushRow(id){
+  const p=DATA.find(x=>x.id===id); if(!p) return;
+  try {
+    const r=await fetch(SB_TABLE,{ method:"POST", headers: sbHeaders({ "Prefer":"resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify([{ id:p.id, name:p.name, stock:Number(p.stock)||0, memo:p.memo, position:p.position||0 }]) });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    setSync("ok","サーバ保存済み ✓"); localStorage.setItem(CACHE_KEY, JSON.stringify(DATA));
+  } catch(e){ setSync("err","⚠ サーバ未保存"); }
+}
+async function deleteRow(id){ try{ await fetch(SB_TABLE+"?id=eq."+encodeURIComponent(id),{ method:"DELETE", headers: sbHeaders() }); setSync("ok","削除しました ✓"); }catch(e){ setSync("err","⚠ 削除の同期に失敗"); } localStorage.setItem(CACHE_KEY, JSON.stringify(DATA)); }
+
+function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function render(){
-  const q = document.getElementById("q").value.trim().toLowerCase();
-  const tb = document.getElementById("tbody"); tb.innerHTML="";
-  let shown=0, total=0;
+  const q=document.getElementById("q").value.trim().toLowerCase();
+  const tb=document.getElementById("tbody"); tb.innerHTML=""; let shown=0,total=0;
   DATA.forEach((p,i)=>{
-    total += Number(p.stock)||0;
-    if (q && ![p.id,p.name,p.memo].join(" ").toLowerCase().includes(q)) return;
+    total+=Number(p.stock)||0;
+    if(q && ![p.id,p.name,p.memo].join(" ").toLowerCase().includes(q)) return;
     shown++;
     const tr=document.createElement("tr");
-    tr.innerHTML =
+    tr.innerHTML=
       `<td class="id"><input value="${esc(p.id)}" data-i="${i}" data-f="id"></td>`+
       `<td><input value="${esc(p.name)}" data-i="${i}" data-f="name"></td>`+
       `<td class="stock ${(Number(p.stock)||0)===0?'stock0':''}"><input type="number" min="0" value="${Number(p.stock)||0}" data-i="${i}" data-f="stock"></td>`+
@@ -157,36 +176,31 @@ function render(){
       `<td><button class="del" data-i="${i}" title="削除">🗑</button></td>`;
     tb.appendChild(tr);
   });
-  document.getElementById("count").textContent = `${shown} / ${DATA.length} 件`;
-  document.getElementById("totalstock").textContent = total;
-  document.getElementById("footstock").textContent = total;
+  document.getElementById("count").textContent=`${shown} / ${DATA.length} 件`;
+  document.getElementById("totalstock").textContent=total;
+  document.getElementById("footstock").textContent=total;
 }
 
 document.getElementById("tbody").addEventListener("input",e=>{
-  const el=e.target, i=el.dataset.i, f=el.dataset.f; if(i==null) return;
-  let v=el.value; if(f==="stock") v=Math.max(0,parseInt(v||"0",10)||0);
-  DATA[i][f]=v; if(f==="stock") render(); save();
+  const el=e.target,i=el.dataset.i,f=el.dataset.f; if(i==null) return;
+  const p=DATA[i];
+  if(f==="stock"){ p.stock=Math.max(0,parseInt(el.value||"0",10)||0); render(); scheduleSave(p.id); }
+  else if(f==="id"){ const old=p.id; p.id=el.value; if(old!==p.id) deleteRow(old); scheduleSave(p.id); }
+  else { p[f]=el.value; scheduleSave(p.id); }
 });
 document.getElementById("tbody").addEventListener("click",e=>{
   if(!e.target.classList.contains("del")) return;
-  const i=+e.target.dataset.i;
-  if(confirm(`${DATA[i].id} ${DATA[i].name} を削除しますか？`)){ DATA.splice(i,1); save(); render(); }
+  const i=+e.target.dataset.i, p=DATA[i];
+  if(confirm(`${p.id} ${p.name} を削除しますか？`)){ DATA.splice(i,1); deleteRow(p.id); render(); }
 });
 function nextId(){ let m=0; for(const p of DATA){ const x=/^ROM(\d+)$/.exec(p.id||""); if(x) m=Math.max(m,parseInt(x[1],10)); } return "ROM"+String(m+1).padStart(5,"0"); }
 document.getElementById("addrow").addEventListener("click",()=>{
-  DATA.push({id:nextId(),name:"",stock:0,memo:""}); document.getElementById("q").value=""; save(); render();
+  const pos=DATA.reduce((m,p)=>Math.max(m,p.position||0),0)+1;
+  const p={id:nextId(),name:"",stock:0,memo:"",position:pos};
+  DATA.push(p); document.getElementById("q").value=""; render(); pushRow(p.id);
   const ins=document.querySelectorAll('#tbody tr:last-child input'); if(ins[1]) ins[1].focus();
 });
-
-function save(){ localStorage.setItem(STORE_KEY,JSON.stringify(DATA)); dirty=true; updateBanner();
-  const s=document.getElementById("savestate"); s.textContent="端末に保存済み ✓"; clearTimeout(save._t); save._t=setTimeout(()=>s.textContent="",1500); }
-function updateBanner(){ document.getElementById("banner").style.display=dirty?"flex":"none"; }
-function buildJSON(){ return JSON.stringify({ updated_at:new Date().toISOString().slice(0,10),
-  note:"弊社内 商品マスター（在庫単位）。stock=在庫数。", products:DATA.map(p=>({id:p.id,name:p.name,stock:Number(p.stock)||0,memo:p.memo||""})) },null,2); }
-document.getElementById("export").addEventListener("click",()=>{ const b=new Blob([buildJSON()+"\n"],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="internal_products.json"; a.click(); URL.revokeObjectURL(a.href); });
-document.getElementById("copy").addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText(buildJSON()); alert("JSONをコピーしました。"); }catch{ prompt("コピーしてください:",buildJSON()); } });
-document.getElementById("reload").addEventListener("click",async()=>{ if(dirty&&!confirm("端末の編集を破棄して共有マスターを読み込みますか？")) return; localStorage.removeItem(STORE_KEY); await loadMaster(); dirty=false; render(); updateBanner(); });
-document.getElementById("discard").addEventListener("click",async()=>{ if(!confirm("この端末の編集内容を破棄して共有マスターに戻しますか？")) return; localStorage.removeItem(STORE_KEY); await loadMaster(); dirty=false; render(); updateBanner(); });
+document.getElementById("reload").addEventListener("click",()=>{ if(confirm("サーバから最新を読み込みます。よろしいですか？")) loadServer(); });
 document.getElementById("q").addEventListener("input",render);
 
 if (sessionStorage.getItem(GATE_KEY)==="1") unlock();

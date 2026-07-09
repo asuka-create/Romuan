@@ -202,11 +202,14 @@ function normalize(s){
 
 /* ---------- 読み込み ---------- */
 async function init(){
-  // 社内商品（構成品ドロップダウン）
+  // 社内商品（構成品ドロップダウン）— Supabaseから取得
   try {
-    const saved = localStorage.getItem("internal_products_v1");
-    BASE = saved ? JSON.parse(saved) : ((await (await fetch("internal_products.json?_="+Date.now())).json()).products||[]);
-  } catch { BASE=[]; }
+    const r = await fetch(SB_URL + "/rest/v1/romuan_products?select=id,name&order=position.asc,id.asc", { headers: sbHeaders() });
+    BASE = r.ok ? await r.json() : [];
+    if (BASE.length) localStorage.setItem("base_cache_v2", JSON.stringify(BASE));
+  } catch {
+    const c = localStorage.getItem("base_cache_v2"); BASE = c ? JSON.parse(c) : [];
+  }
   // LINE GIFT 商品（価格・紐付け）
   try {
     const d = await (await fetch("products.json?_="+Date.now())).json();
