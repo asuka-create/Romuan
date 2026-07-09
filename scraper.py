@@ -174,7 +174,13 @@ def build_record(item):
     brand = item.get("brand") or {}
     itype = item.get("type") or {}
     images = item.get("images") or []
-    image_url = images[0].get("image_url") if images else ""
+    # 全画像URL（表示用の image_url を優先。無ければ他の解像度）
+    image_list = []
+    for im in images:
+        u = im.get("image_url") or im.get("fullscreen_url") or im.get("square_url")
+        if u:
+            image_list.append(u)
+    image_url = image_list[0] if image_list else ""
     pid = str(item.get("id"))
     return {
         "id": pid,
@@ -192,6 +198,7 @@ def build_record(item):
         "delivery_charge": item.get("delivery_charge"),
         "url": f"{SHOP_URL}/{pid}",
         "image_url": image_url,
+        "images": image_list,
         "catchphrase": "",
         "description": "",
         "spec": "",

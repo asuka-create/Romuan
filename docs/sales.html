@@ -423,23 +423,50 @@ function download(name, text, mime){
 function csvCell(v){ v=(v==null?"":String(v)); return '"'+v.replace(/"/g,'""')+'"'; }
 function tsvCell(v){ return (v==null?"":String(v)).replace(/[\t\r\n]+/g," ").trim(); }
 
-// Shopify 商品CSV（標準インポート形式・UTF-8）
+// Shopify 商品CSV（御社テンプレートの列に一致・UTF-8・複数画像は行を分けて出力）
+const SHOPIFY_COLS = ["Handle","Title","Body (HTML)","Vendor","Product Category","Type","Tags","Published",
+  "Option1 Name","Option1 Value","Option1 Linked To","Option2 Name","Option2 Value","Option2 Linked To",
+  "Option3 Name","Option3 Value","Option3 Linked To","Variant SKU","Variant Grams","Variant Inventory Tracker",
+  "Variant Inventory Qty","Variant Inventory Policy","Variant Fulfillment Service","Variant Price",
+  "Variant Compare At Price","Variant Requires Shipping","Variant Taxable","Unit Price Total Measure",
+  "Unit Price Total Measure Unit","Unit Price Base Measure","Unit Price Base Measure Unit","Variant Barcode",
+  "Image Src","Image Position","Image Alt Text","Gift Card","SEO Title","SEO Description",
+  "アレルゲン情報 (product.metafields.shopify.allergen-information)","国 (product.metafields.shopify.country)",
+  "食事の好み (product.metafields.shopify.dietary-preferences)","フレーバー (product.metafields.shopify.flavor)",
+  "ジンの種類 (product.metafields.shopify.gin-variety)","地域 (product.metafields.shopify.region)",
+  "スピリット希釈 (product.metafields.shopify.spirit-dilution)","テキーラの種類 (product.metafields.shopify.tequila-variety)",
+  "ウイスキーの種類 (product.metafields.shopify.whiskey-style)","ウイスキー各種 (product.metafields.shopify.whiskey-variety)",
+  "Variant Image","Variant Weight Unit","Variant Tax Code","Cost per item","Included / 日本","Price / 日本",
+  "Compare At Price / 日本","Status"];
+function slugify(s){
+  return String(s||"").toLowerCase()
+    .replace(/[「」【】（）()｜|・、。／/，,＆&%％!！?？:：;；'"'"’]/g," ")
+    .replace(/[\s　]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,120) || "romuan-item";
+}
 function buildShopifyCSV(){
-  const cols=["Handle","Title","Body (HTML)","Vendor","Type","Tags","Published",
-    "Option1 Name","Option1 Value","Variant SKU","Variant Inventory Tracker","Variant Inventory Qty",
-    "Variant Inventory Policy","Variant Fulfillment Service","Variant Price","Variant Requires Shipping",
-    "Variant Taxable","Image Src","Status"];
-  const lines=[cols.join(",")];
+  const lines=[SHOPIFY_COLS.join(",")];
+  const row=obj=>SHOPIFY_COLS.map(c=>csvCell(obj[c]||"")).join(",");
   DATA.forEach(s=>{
     const lp=lineOf(s); if(!lp && !s.name) return;
     const title=s.name || (lp?(lp.name_full||lp.name):"");
-    const row=[
-      "romuan-"+String(s.id).toLowerCase(), title, bodyHtml(lp),
-      (lp&&lp.brand)||"美酒館", (lp&&lp.category)||"", [lp&&lp.brand,lp&&lp.category].filter(Boolean).join(", "),
-      "FALSE","Title","Default Title", s.id, "shopify", buildableQty(s),
-      "deny","manual", (lp?lp.price:""), "TRUE","TRUE", (lp?lp.image_url:""), "draft"
-    ];
-    lines.push(row.map(csvCell).join(","));
+    const imgs=(lp&&lp.images&&lp.images.length)?lp.images:(lp&&lp.image_url?[lp.image_url]:[]);
+    const handle=slugify(title);
+    // メイン行（商品情報＋1枚目画像）
+    lines.push(row({
+      "Handle":handle, "Title":title, "Body (HTML)":bodyHtml(lp),
+      "Vendor":(lp&&lp.brand)||"美酒館", "Type":(lp&&lp.category)||"",
+      "Tags":[lp&&lp.brand,lp&&lp.category].filter(Boolean).join(", "), "Published":"FALSE",
+      "Option1 Name":"Title", "Option1 Value":"Default Title",
+      "Variant SKU":s.id, "Variant Inventory Tracker":"shopify", "Variant Inventory Qty":buildableQty(s),
+      "Variant Inventory Policy":"deny", "Variant Fulfillment Service":"manual",
+      "Variant Price":(lp?lp.price:""), "Variant Requires Shipping":"TRUE", "Variant Taxable":"TRUE",
+      "Variant Weight Unit":"g", "Image Src":imgs[0]||"", "Image Position":imgs.length?"1":"",
+      "Image Alt Text":title, "Gift Card":"FALSE", "Status":"draft"
+    }));
+    // 追加画像行（2枚目以降）
+    for(let i=1;i<imgs.length;i++){
+      lines.push(row({ "Handle":handle, "Image Src":imgs[i], "Image Position":String(i+1), "Image Alt Text":title }));
+    }
   });
   return lines.join("\r\n");
 }
