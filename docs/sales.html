@@ -167,6 +167,7 @@
       <span style="font-size:.76rem;color:var(--yahoo);font-weight:600">Yahoo共通設定:</span>
       <input id="yhPath" placeholder="カテゴリパス path（例: マッコリ）" style="min-width:190px;flex:0 1 auto">
       <input id="yhCat" placeholder="プロダクトカテゴリ product-category（数字コード）" style="min-width:230px;flex:0 1 auto">
+      <input id="yhDelivery" placeholder="配送グループ delivery（グループ名）" style="min-width:200px;flex:0 1 auto">
       <span style="font-size:.72rem;color:var(--muted)">※Yahoo出力時に全商品へ適用（自動保存）</span>
     </div>
   </div>
@@ -550,6 +551,7 @@ function buildYahooCSV(list){
   list = list || DATA;
   const yhPath=(document.getElementById("yhPath").value||"").trim();
   const yhCat=(document.getElementById("yhCat").value||"").trim();
+  const yhDelivery=(document.getElementById("yhDelivery").value||"").trim();
   const lines=[YAHOO_COLS.map(csvCell).join(",")];
   const row=obj=>YAHOO_COLS.map(c=>csvCell(obj[c]!=null?obj[c]:"")).join(",");
   list.forEach(s=>{
@@ -568,7 +570,8 @@ function buildYahooCSV(list){
       "abstract": sjisTrunc((lp&&lp.catchphrase)||"", 500, 250),
       "explanation": sjisTrunc(plainText(lp), 1000, 500),   // 500文字/1000バイト以内
       "taxable": "1",                                 // 課税
-      "product-category": yhCat
+      "product-category": yhCat,
+      "delivery": yhDelivery                           // 配送グループ
     }));
   });
   return lines.join("\r\n");
@@ -606,8 +609,8 @@ document.getElementById("export").addEventListener("click",()=>{
 document.getElementById("q").addEventListener("input",render);
 
 // Yahoo共通設定（path / product-category）を端末に保存（初期値あり）
-const YH_DEFAULTS={ yhPath:"マッコリ", yhCat:"41388" };  // マッコリ プロダクトカテゴリID=41388
-["yhPath","yhCat"].forEach(id=>{
+const YH_DEFAULTS={ yhPath:"マッコリ", yhCat:"41388", yhDelivery:"" };  // マッコリ プロダクトカテゴリID=41388
+["yhPath","yhCat","yhDelivery"].forEach(id=>{
   const el=document.getElementById(id);
   const saved=localStorage.getItem("yahoo_"+id);
   el.value = (saved!==null && saved!=="") ? saved : YH_DEFAULTS[id];
