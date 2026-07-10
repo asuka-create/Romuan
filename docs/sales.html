@@ -91,8 +91,11 @@
   .chan .idf { max-width: 150px; }
   .chan .price { font-size: .78rem; color: var(--ok); white-space: nowrap; }
   .chan .price.dupe { color: var(--err); font-weight: 700; }
+  .chanactions { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
   .chan a.ext { font-size: .8rem; color: var(--accent); text-decoration: none; white-space: nowrap; }
   .chan a.ext.off { color: var(--muted); opacity: .4; pointer-events: none; }
+  .chan a.ext.search { color: var(--muted); font-weight: 600; }
+  .chan.yahoo a.ext.search { color: var(--yahoo); } .chan.shopify a.ext.search { color: var(--shopify); }
   .switch { position: relative; width: 38px; height: 22px; flex: none; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .slider { position: absolute; inset: 0; background: var(--line); border-radius: 999px; transition: .2s; cursor: pointer; }
@@ -177,6 +180,11 @@ const SB_URL = "https://qbfjeitlzrtazavklhde.supabase.co";
 const SB_KEY = "sb_publishable_gCDMwBOWaSwq6uh34lWRXA_rYQ6VptD";
 const SB_TABLE = SB_URL + "/rest/v1/romuan_sales";
 const LINE_SHOP = "https://mall.line.me/sb/d84e5e64";
+// 各マーケットの検索URL（商品名で検索して掲載有無を確認する）
+const SHOP_SEARCH = {
+  shopify: "https://romuan.com/search?q=",              // 自社Shopifyストア内検索
+  yahoo:   "https://shopping.yahoo.co.jp/search?p="      // Yahoo!ショッピング検索（自店URLが決まれば差し替え可）
+};
 
 let DATA = [], BASE = [], LINE = [];
 
@@ -340,7 +348,10 @@ function render(){
              <input class="idf" placeholder="掲載ID" value="${esc(ch.yahoo.id)}" data-si="${si}" data-ch="yahoo" data-cf="id">
              <input placeholder="URL" value="${esc(ch.yahoo.url)}" data-si="${si}" data-ch="yahoo" data-cf="url">
            </div>
-           <a class="ext ${ch.yahoo.url?'':'off'}" href="${esc(ch.yahoo.url||'#')}" target="_blank" rel="noopener">開く ↗</a>
+           <div class="chanactions">
+             <a class="ext search" href="${SHOP_SEARCH.yahoo + encodeURIComponent(s.name||lineLabel||'')}" target="_blank" rel="noopener">🔍 検索</a>
+             <a class="ext ${ch.yahoo.url?'':'off'}" href="${esc(ch.yahoo.url||'#')}" target="_blank" rel="noopener">開く ↗</a>
+           </div>
          </div>
          <div class="chan shopify">
            <div class="clabel"><span class="switch"><input type="checkbox" ${ch.shopify.listed?'checked':''} data-si="${si}" data-ch="shopify" data-cf="listed"><span class="slider"></span></span><span class="tag"></span>Shopify</div>
@@ -348,7 +359,10 @@ function render(){
              <input class="idf" placeholder="掲載ID" value="${esc(ch.shopify.id)}" data-si="${si}" data-ch="shopify" data-cf="id">
              <input placeholder="URL" value="${esc(ch.shopify.url)}" data-si="${si}" data-ch="shopify" data-cf="url">
            </div>
-           <a class="ext ${ch.shopify.url?'':'off'}" href="${esc(ch.shopify.url||'#')}" target="_blank" rel="noopener">開く ↗</a>
+           <div class="chanactions">
+             <a class="ext search" href="${SHOP_SEARCH.shopify + encodeURIComponent(s.name||lineLabel||'')}" target="_blank" rel="noopener">🔍 検索</a>
+             <a class="ext ${ch.shopify.url?'':'off'}" href="${esc(ch.shopify.url||'#')}" target="_blank" rel="noopener">開く ↗</a>
+           </div>
          </div>
        </div>
        <div class="sec">
@@ -513,24 +527,15 @@ function salesForExport(channel){
   const onlyPending = document.getElementById("expScope").value === "pending";
   return DATA.filter(s => (lineOf(s) || s.name) && (!onlyPending || !s.channels[channel].listed));
 }
-function afterExport(channel, list, label){
-  if (document.getElementById("expScope").value !== "pending") return;
-  if (confirm(`${list.length}件を書き出しました。\nこれらを「${label} 掲載済み」にして、次回のエクスポート対象から外しますか？`)){
-    list.forEach(s => { s.channels[channel].listed = true; pushRow(s.id); });
-    render();
-  }
-}
 document.getElementById("expShopify").addEventListener("click",()=>{
   const list = salesForExport("shopify");
   if(!list.length){ alert("Shopify未掲載の販売登録がありません。"); return; }
   download("shopify_products.csv", buildShopifyCSV(list), "text/csv;charset=utf-8");
-  afterExport("shopify", list, "Shopify");
 });
 document.getElementById("expYahoo").addEventListener("click",()=>{
   const list = salesForExport("yahoo");
   if(!list.length){ alert("Yahoo未掲載の販売登録がありません。"); return; }
   download("yahoo_items.tsv", buildYahooTSV(list), "text/tab-separated-values;charset=utf-8");
-  afterExport("yahoo", list, "Yahoo!ショップ");
 });
 
 document.getElementById("reload").addEventListener("click",()=>{ if(confirm("サーバから最新を読み込みます。よろしいですか？")) loadServer(); });
