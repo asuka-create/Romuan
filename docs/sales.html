@@ -605,10 +605,12 @@ document.getElementById("export").addEventListener("click",()=>{
 });
 document.getElementById("q").addEventListener("input",render);
 
-// Yahoo共通設定（path / product-category）を端末に保存
+// Yahoo共通設定（path / product-category）を端末に保存（初期値あり）
+const YH_DEFAULTS={ yhPath:"マッコリ", yhCat:"41388" };  // マッコリ プロダクトカテゴリID=41388
 ["yhPath","yhCat"].forEach(id=>{
   const el=document.getElementById(id);
-  el.value = localStorage.getItem("yahoo_"+id) || "";
+  const saved=localStorage.getItem("yahoo_"+id);
+  el.value = (saved!==null && saved!=="") ? saved : YH_DEFAULTS[id];
   el.addEventListener("input",()=>localStorage.setItem("yahoo_"+id, el.value));
 });
 
