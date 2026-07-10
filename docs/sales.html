@@ -448,8 +448,9 @@ function bodyHtml(lp){
   if(lp.spec) parts.push(`<p>${String(lp.spec).replace(/\n/g,"<br>")}</p>`);
   return parts.join("");
 }
-function download(name, text, mime){
-  const blob=new Blob(["﻿"+text],{type:mime}); const a=document.createElement("a");
+function download(name, text, mime, bom){
+  if(bom===undefined) bom=true;
+  const blob=new Blob([(bom?"﻿":"")+text],{type:mime}); const a=document.createElement("a");
   a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
 }
 function csvCell(v){ v=(v==null?"":String(v)); return '"'+v.replace(/"/g,'""')+'"'; }
@@ -504,20 +505,28 @@ function buildShopifyCSV(list){
   return lines.join("\r\n");
 }
 
-// Yahoo!ショッピング 商品データ（ストアクリエイターPro 個別項目・TSV）
-function buildYahooTSV(list){
+// Yahoo!ショッピング 商品データ（ストアクリエイターPro 個別商品CSV・63列・全項目クオート・UTF-8/BOMなし）
+const YAHOO_COLS = ["path","name","code","sub-code","original-price","price","sale-price","options","headline","caption","abstract","explanation","additional1","additional2","additional3","ship-weight","taxable","release-date","point-code","meta-desc","sale-period-start","sale-period-end","sale-limit","sp-code","brand-code","product-code","jan","delivery","condition","product-category","spec1","spec2","spec3","spec4","spec5","spec6","spec7","spec8","spec9","spec10","display","sp-additional","sort_priority","original-price-evidence","lead-time-instock","lead-time-outstock","keep-stock","postage-set","taxrate-type","item-tag","reserve-price","reserve-sale-price","reserve-selling-period-start","reserve-selling-period-end","subscription-type","subscription-price","subscription-group-index","subscription-recommended-cycle","subscription-point-code","eco-setting-id","eco-setting-evidence-url","item-social-gift-type","cross-border-agency-flag"];
+function buildYahooCSV(list){
   list = list || DATA;
-  const cols=["code","name","price","sale-price","headline","caption","abstract","explanation","brand","product-category"];
-  const lines=[cols.join("\t")];
+  const lines=[YAHOO_COLS.map(csvCell).join(",")];
+  const row=obj=>YAHOO_COLS.map(c=>csvCell(obj[c]!=null?obj[c]:"")).join(",");
   list.forEach(s=>{
     const lp=lineOf(s); if(!lp && !s.name) return;
     const title=s.name || (lp?(lp.name_full||lp.name):"");
-    const row=[
-      String(s.id).toLowerCase(), title, (lp?lp.price:""), "",
-      (lp&&lp.catchphrase)||"", (lp?(lp.name_full||lp.name):""), (lp&&lp.catchphrase)||"",
-      bodyHtml(lp), (lp&&lp.brand)||"", (lp&&lp.category)||""
-    ];
-    lines.push(row.map(tsvCell).join("\t"));
+    const yid=(s.channels.yahoo.id||"").trim();
+    const code=yid || String(s.id).toLowerCase();   // 商品コード（未入力ならSALE IDを流用）
+    lines.push(row({
+      "name": title,
+      "code": code,
+      "original-price": (lp && lp.regular_price && lp.regular_price!==lp.price) ? lp.regular_price : "",
+      "price": lp ? lp.price : "",
+      "headline": (lp&&lp.catchphrase) || "",
+      "caption": lp ? (lp.name_full||lp.name) : "",
+      "abstract": (lp&&lp.catchphrase) || "",
+      "explanation": bodyHtml(lp),
+      "taxable": "1"                                  // 課税
+    }));
   });
   return lines.join("\r\n");
 }
@@ -535,7 +544,7 @@ document.getElementById("expShopify").addEventListener("click",()=>{
 document.getElementById("expYahoo").addEventListener("click",()=>{
   const list = salesForExport("yahoo");
   if(!list.length){ alert("Yahoo未掲載の販売登録がありません。"); return; }
-  download("yahoo_items.tsv", buildYahooTSV(list), "text/tab-separated-values;charset=utf-8");
+  download("yahoo_data.csv", buildYahooCSV(list), "text/csv;charset=utf-8", false);
 });
 
 document.getElementById("reload").addEventListener("click",()=>{ if(confirm("サーバから最新を読み込みます。よろしいですか？")) loadServer(); });
