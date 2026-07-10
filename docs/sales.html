@@ -44,6 +44,7 @@
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   button.ghost { background: transparent; }
   .toolbar select { font-size: .85rem; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface2); color: var(--text); }
+  .toolbar input:not([type="search"]) { font-size: .85rem; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface2); color: var(--text); }
   .sync { font-size: .78rem; margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--muted); }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
   .sync.ok .dot { background: var(--ok); } .sync.saving .dot { background: var(--warn); }
@@ -161,6 +162,12 @@
       <button id="reload" class="ghost">サーバから再読込</button>
       <button id="export" class="ghost">JSONバックアップ</button>
       <span class="sync" id="sync"><span class="dot"></span><span id="syncmsg">—</span></span>
+    </div>
+    <div class="toolbar" style="margin-top:6px">
+      <span style="font-size:.76rem;color:var(--yahoo);font-weight:600">Yahoo共通設定:</span>
+      <input id="yhPath" placeholder="カテゴリパス path（例: マッコリ）" style="min-width:190px;flex:0 1 auto">
+      <input id="yhCat" placeholder="プロダクトカテゴリ product-category（数字コード）" style="min-width:230px;flex:0 1 auto">
+      <span style="font-size:.72rem;color:var(--muted)">※Yahoo出力時に全商品へ適用（自動保存）</span>
     </div>
   </div>
 </header>
@@ -524,8 +531,25 @@ function buildShopifyCSV(list){
 
 // Yahoo!ショッピング 商品データ（ストアクリエイターPro 個別商品CSV・63列・全項目クオート・UTF-8/BOMなし）
 const YAHOO_COLS = ["path","name","code","sub-code","original-price","price","sale-price","options","headline","caption","abstract","explanation","additional1","additional2","additional3","ship-weight","taxable","release-date","point-code","meta-desc","sale-period-start","sale-period-end","sale-limit","sp-code","brand-code","product-code","jan","delivery","condition","product-category","spec1","spec2","spec3","spec4","spec5","spec6","spec7","spec8","spec9","spec10","display","sp-additional","sort_priority","original-price-evidence","lead-time-instock","lead-time-outstock","keep-stock","postage-set","taxrate-type","item-tag","reserve-price","reserve-sale-price","reserve-selling-period-start","reserve-selling-period-end","subscription-type","subscription-price","subscription-group-index","subscription-recommended-cycle","subscription-point-code","eco-setting-id","eco-setting-evidence-url","item-social-gift-type","cross-border-agency-flag"];
+// SJISバイト数で切り詰め（Yahoo explanation は 500文字/1000バイト以内）
+function sjisTrunc(text, maxBytes, maxChars){
+  let out="", bytes=0, chars=0;
+  for(const ch of text){
+    if(chars>=maxChars) break;
+    let b=1; try{ b=Encoding.convert(Encoding.stringToCode(ch),{to:"SJIS",from:"UNICODE"}).length; }catch(e){}
+    if(bytes+b>maxBytes) break;
+    out+=ch; bytes+=b; chars++;
+  }
+  return out;
+}
+function plainText(lp){
+  const t=[ (lp&&lp.catchphrase)||"", (lp&&lp.description)||"" ].filter(Boolean).join(" ");
+  return t.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+}
 function buildYahooCSV(list){
   list = list || DATA;
+  const yhPath=(document.getElementById("yhPath").value||"").trim();
+  const yhCat=(document.getElementById("yhCat").value||"").trim();
   const lines=[YAHOO_COLS.map(csvCell).join(",")];
   const row=obj=>YAHOO_COLS.map(c=>csvCell(obj[c]!=null?obj[c]:"")).join(",");
   list.forEach(s=>{
@@ -534,15 +558,17 @@ function buildYahooCSV(list){
     const yid=(s.channels.yahoo.id||"").trim();
     const code=yid || String(s.id).toLowerCase();   // 商品コード（未入力ならSALE IDを流用）
     lines.push(row({
+      "path": yhPath,
       "name": title,
       "code": code,
       "original-price": (lp && lp.regular_price && lp.regular_price!==lp.price) ? lp.regular_price : "",
       "price": lp ? lp.price : "",
-      "headline": (lp&&lp.catchphrase) || "",
+      "headline": sjisTrunc((lp&&lp.catchphrase)||"", 60, 30),
       "caption": lp ? (lp.name_full||lp.name) : "",
-      "abstract": (lp&&lp.catchphrase) || "",
-      "explanation": bodyHtml(lp),
-      "taxable": "1"                                  // 課税
+      "abstract": sjisTrunc((lp&&lp.catchphrase)||"", 500, 250),
+      "explanation": sjisTrunc(plainText(lp), 1000, 500),   // 500文字/1000バイト以内
+      "taxable": "1",                                 // 課税
+      "product-category": yhCat
     }));
   });
   return lines.join("\r\n");
@@ -578,6 +604,13 @@ document.getElementById("export").addEventListener("click",()=>{
   a.href=URL.createObjectURL(b); a.download="sales_backup.json"; a.click(); URL.revokeObjectURL(a.href);
 });
 document.getElementById("q").addEventListener("input",render);
+
+// Yahoo共通設定（path / product-category）を端末に保存
+["yhPath","yhCat"].forEach(id=>{
+  const el=document.getElementById(id);
+  el.value = localStorage.getItem("yahoo_"+id) || "";
+  el.addEventListener("input",()=>localStorage.setItem("yahoo_"+id, el.value));
+});
 
 if (sessionStorage.getItem(GATE_KEY)==="1") unlock();
 else document.getElementById("gatepw").focus();
