@@ -123,6 +123,7 @@
   #gate .err { color: var(--err); font-size: .8rem; min-height: 1.2em; margin-top: 10px; }
   body.locked { overflow: hidden; }
 </style>
+<script src="encoding.min.js"></script>
 </head>
 <body class="locked">
 <div id="gate">
@@ -453,6 +454,22 @@ function download(name, text, mime, bom){
   const blob=new Blob([(bom?"﻿":"")+text],{type:mime}); const a=document.createElement("a");
   a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
 }
+// Shift_JIS でダウンロード（Yahoo用）
+function downloadSJIS(name, text){
+  const sjis = Encoding.convert(Encoding.stringToCode(text), { to:"SJIS", from:"UNICODE" });
+  const blob = new Blob([new Uint8Array(sjis)], { type:"text/csv" });
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+// Shift_JISで表現できない文字を検出（"?"に化ける文字）
+function nonSjisChars(text){
+  const set=new Set();
+  for(const ch of text){
+    if(ch==="?"||ch==="\r"||ch==="\n") continue;
+    const s=Encoding.convert(Encoding.stringToCode(ch),{to:"SJIS",from:"UNICODE"});
+    if(s.length===1 && s[0]===63) set.add(ch);
+  }
+  return [...set];
+}
 function csvCell(v){ v=(v==null?"":String(v)); return '"'+v.replace(/"/g,'""')+'"'; }
 function tsvCell(v){ return (v==null?"":String(v)).replace(/[\t\r\n]+/g," ").trim(); }
 
@@ -544,7 +561,14 @@ document.getElementById("expShopify").addEventListener("click",()=>{
 document.getElementById("expYahoo").addEventListener("click",()=>{
   const list = salesForExport("yahoo");
   if(!list.length){ alert("Yahoo未掲載の販売登録がありません。"); return; }
-  download("yahoo_data.csv", buildYahooCSV(list), "text/csv;charset=utf-8", false);
+  // 視覚的に同等でSJISに無い文字を安全な全角へ置換（?化を減らす）
+  const csv = buildYahooCSV(list)
+    .replace(/〜/g,"～")   // 〜(波ダッシュ)→～(全角チルダ)
+    .replace(/•/g,"・")   // •(中黒)→・
+    .replace(/−/g,"－");  // −(マイナス)→－
+  const bad = nonSjisChars(csv);
+  if(bad.length && !confirm(`次の文字はShift_JISで表現できず「?」に置き換わります:\n\n${bad.join("  ")}\n\n該当する商品名などは後で修正が必要です。このまま書き出しますか？`)) return;
+  downloadSJIS("yahoo_data.csv", csv);
 });
 
 document.getElementById("reload").addEventListener("click",()=>{ if(confirm("サーバから最新を読み込みます。よろしいですか？")) loadServer(); });
