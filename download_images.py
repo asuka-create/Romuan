@@ -22,6 +22,7 @@ docs/products.json に保存された各商品の画像URLを読み、
 
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -40,6 +41,19 @@ def ext_of(url):
         if path.lower().endswith(e):
             return e
     return ".jpg"
+
+
+def safe_name(s):
+    """Windowsのフォルダ名に使えない文字を除去し、短く整える。"""
+    s = re.sub(r'[\\/:*?"<>|\r\n\t]', "", s or "")
+    s = re.sub(r"\s+", " ", s).strip().strip(".")
+    return s[:50].strip() or "noname"
+
+
+def folder_name(pid, product):
+    """『商品名 [商品ID]』の探しやすいフォルダ名。"""
+    name = product.get("name_full") or product.get("name") or ""
+    return f"{safe_name(name)} [{pid}]"
 
 
 def download(url, dest, retries=3):
@@ -64,12 +78,18 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     total_imgs = total_bytes = skipped = failed = 0
 
+    renamed = 0
     for p in products:
         pid = str(p["id"])
         imgs = p.get("images") or ([p["image_url"]] if p.get("image_url") else [])
         if not imgs:
             continue
-        folder = os.path.join(OUT_DIR, pid)
+        folder = os.path.join(OUT_DIR, folder_name(pid, p))
+        # 旧フォルダ（商品IDのみ）が残っていれば、探しやすい名前へリネーム
+        old = os.path.join(OUT_DIR, pid)
+        if os.path.isdir(old) and old != folder and not os.path.isdir(folder):
+            os.rename(old, folder)
+            renamed += 1
         os.makedirs(folder, exist_ok=True)
 
         for i, url in enumerate(imgs, 1):
@@ -88,6 +108,7 @@ def main():
             time.sleep(0.1)
 
     print("\n--- 完了 ---")
+    print(f"  フォルダ名を変更: {renamed} 件（商品名付きに）")
     print(f"  ダウンロード: {total_imgs} 枚 ({total_bytes/1024/1024:.1f} MB)")
     print(f"  スキップ(既存): {skipped} 枚 / 失敗: {failed} 枚")
     print(f"  保存先: {OUT_DIR}")
