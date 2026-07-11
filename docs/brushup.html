@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ブラッシュアップ | 美酒館トラッカー</title>
+<style>
+  :root {
+    --bg: #eceae6; --surface: #ffffff; --surface2: #f6f4f0; --text: #1c1a17; --muted: #78716a;
+    --line: #ddd8d0; --accent: #7b1e2b; --accent2: #a83246;
+    --yahoo: #ef2b2d;
+    --ok: #1a7f5a; --err: #c0392b; --warn: #b8791b;
+    --shadow: 0 2px 6px rgba(60,40,30,.10), 0 1px 2px rgba(60,40,30,.06);
+    --shadow-lg: 0 6px 20px rgba(60,40,30,.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13110d; --surface: #24201a; --surface2: #2d2822; --text: #efe9df; --muted: #a49c8f;
+      --line: #3a352e; --accent: #e0899a; --accent2: #e0899a;
+      --yahoo: #ff5a5c;
+      --ok: #4fd6a0; --err: #e08a7d; --warn: #e0b463;
+      --shadow: 0 2px 8px rgba(0,0,0,.4); --shadow-lg: 0 8px 26px rgba(0,0,0,.5);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  header { padding: 18px 18px 14px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 20; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.2rem; margin: 0 0 4px; }
+  h1 .en { color: var(--muted); font-weight: 400; font-size: .78rem; margin-left: 6px; }
+  nav { display: flex; gap: 14px; margin: 8px 0 2px; font-size: .86rem; flex-wrap: wrap; }
+  nav a { color: var(--muted); text-decoration: none; padding-bottom: 3px; }
+  nav a.active { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 600; }
+  .meta { color: var(--muted); font-size: .82rem; margin-top: 6px; }
+  .meta b { color: var(--text); }
+  .steps { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; font-size: .78rem; color: var(--muted); }
+  .steps span { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface2); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  input[type="search"] { flex: 1; min-width: 160px; font-size: .9rem; padding: 8px 11px;
+    border: 1px solid var(--line); border-radius: 9px; background: var(--surface2); color: var(--text); }
+  button { font-size: .85rem; font-weight: 600; padding: 8px 13px; border: 1px solid var(--line);
+    border-radius: 9px; background: var(--surface); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.ghost { background: transparent; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .sync { font-size: .78rem; margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .sync.ok .dot { background: var(--ok); } .sync.saving .dot { background: var(--warn); } .sync.err .dot { background: var(--err); }
+  main { max-width: 1000px; margin: 0 auto; padding: 16px 14px 90px; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-head { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px; }
+  .card-head input[type="checkbox"] { margin-top: 4px; width: 18px; height: 18px; flex: none; }
+  .card-title { font-weight: 700; font-size: .95rem; }
+  .card-sub { color: var(--muted); font-size: .8rem; margin-top: 2px; }
+  .card-current { font-size: .82rem; color: var(--muted); margin-top: 6px; white-space: pre-wrap; }
+  .chip { font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    border: 1.5px solid var(--line); color: var(--muted); background: var(--surface2); }
+  .chip.applied { color: #fff; background: var(--ok); border-color: var(--ok); }
+  .chip.draft { color: #fff; background: var(--warn); border-color: var(--warn); }
+
+  .suggestion { border-top: 1px solid var(--line); padding: 14px 16px; background: var(--surface2); }
+  .suggestion .row { margin-bottom: 10px; }
+  .suggestion label { display: block; font-size: .74rem; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+  .suggestion input, .suggestion textarea { width: 100%; font-size: .86rem; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-family: inherit; }
+  .suggestion textarea { min-height: 70px; resize: vertical; }
+  .notes { font-size: .8rem; color: var(--text); }
+  .notes ul { margin: 4px 0; padding-left: 18px; }
+  .imgprompts { display: flex; flex-direction: column; gap: 6px; }
+  .imgprompt { display: flex; gap: 8px; align-items: flex-start; font-size: .78rem; padding: 8px 10px;
+    border: 1px dashed var(--line); border-radius: 8px; background: var(--surface); }
+  .imgprompt .badge { flex: none; font-size: .68rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .loading { font-size: .82rem; color: var(--muted); padding: 14px 16px; border-top: 1px solid var(--line); }
+  .err-box { font-size: .82rem; color: var(--err); padding: 14px 16px; border-top: 1px solid var(--line); }
+  .hint { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+
+  #gate { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  #gate .box { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-lg); padding: 30px 26px; width: 100%; max-width: 360px; text-align: center; }
+  #gate h2 { margin: 0 0 6px; font-size: 1.05rem; }
+  #gate p { margin: 0 0 18px; color: var(--muted); font-size: .82rem; }
+  #gate input { width: 100%; font-size: 1rem; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface2); color: var(--text); text-align: center; margin-bottom: 12px; }
+  #gate button { width: 100%; font-size: .95rem; padding: 11px; border: none; border-radius: 10px; background: var(--accent); color: #fff; }
+  #gate .err { color: var(--err); font-size: .8rem; min-height: 1.2em; margin-top: 10px; }
+  body.locked { overflow: hidden; }
+</style>
+</head>
+<body class="locked">
+<div id="gate">
+  <div class="box">
+    <h2>ブラッシュアップ</h2>
+    <p>閲覧には合言葉が必要です</p>
+    <input type="password" id="gatepw" placeholder="合言葉を入力" autocomplete="current-password">
+    <button id="gatebtn">開く</button>
+    <div class="err" id="gateerr"></div>
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <h1>ブラッシュアップ<span class="en">Yahoo!出品コピー改善</span></h1>
+    <nav>
+      <a href="index.html">LINE GIFT 商品リスト</a>
+      <a href="manage.html">社内 商品マスター</a>
+      <a href="sales.html">販売登録</a>
+      <a href="brushup.html" class="active">ブラッシュアップ</a>
+    </nav>
+    <div class="meta">
+      Yahoo!掲載中の商品から選んで、見出し・説明文の改善案をAIに提案してもらいます。<br>
+      承認した内容は「販売登録」ページの Yahoo取込CSV に自動反映されます。
+    </div>
+    <div class="steps">
+      <span>1. 読み込む</span><span>2. 選ぶ</span><span>3. 改善提案</span><span>4. 反映</span>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="商品名・販売IDで検索…">
+      <button id="selAll" class="ghost">全選択</button>
+      <button id="selNone" class="ghost">選択解除</button>
+      <button id="genBtn" class="primary">選択した商品を提案生成 (<span id="selCount">0</span>)</button>
+      <button id="reload" class="ghost">サーバから再読込</button>
+      <span class="sync" id="sync"><span class="dot"></span><span id="syncmsg">—</span></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="list"></div>
+  <div class="empty" id="empty" style="display:none">
+    Yahoo!に掲載中の販売登録がありません。「販売登録」ページで掲載フラグをONにしてください。
+  </div>
+</main>
+
+<script>
+const PW_HASH = "86138699a5c3861fd957004d5c07c6466e7470eb0cffd2152d928a5bcf9a738a";
+const GATE_KEY = "bijoukan_gate_ok";
+const CACHE_KEY = "brushup_cache_v1";
+const SB_URL = "https://qbfjeitlzrtazavklhde.supabase.co";
+const SB_KEY = "sb_publishable_gCDMwBOWaSwq6uh34lWRXA_rYQ6VptD";
+const SB_TABLE = SB_URL + "/rest/v1/romuan_sales";
+const EDGE_URL = SB_URL + "/functions/v1/brushup-suggest";
+
+let DATA = [], LINE = [];
+const selected = new Set();
+const genErrors = {};   // sale.id -> 直近の提案生成エラー文言（renderで消えないよう外に保持）
+
+function sbHeaders(extra){ return Object.assign({ "apikey": SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json" }, extra||{}); }
+
+/* ---------- 合言葉ゲート ---------- */
+async function sha256(str){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function unlock(){ document.getElementById("gate").style.display="none"; document.body.classList.remove("locked"); init(); }
+async function tryUnlock(){ const pw=document.getElementById("gatepw").value; if(await sha256(pw)===PW_HASH){ sessionStorage.setItem(GATE_KEY,"1"); unlock(); } else { document.getElementById("gateerr").textContent="合言葉が違います"; document.getElementById("gatepw").select(); } }
+document.getElementById("gatebtn").addEventListener("click",tryUnlock);
+document.getElementById("gatepw").addEventListener("keydown",e=>{ if(e.key==="Enter") tryUnlock(); });
+
+/* ---------- 同期ステータス ---------- */
+function setSync(state,msg){ document.getElementById("sync").className="sync "+state; document.getElementById("syncmsg").textContent=msg; }
+function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------- 正規化（sales.htmlと同じchannels構造） ---------- */
+function emptyChan(){ return { listed:false, id:"", url:"" }; }
+function normalize(s){
+  s.channels = s.channels || {};
+  s.channels.linegift = Object.assign(emptyChan(), s.channels.linegift);
+  s.channels.yahoo    = Object.assign(emptyChan(), s.channels.yahoo);
+  s.channels.shopify  = Object.assign(emptyChan(), s.channels.shopify);
+  return s;
+}
+function lineOf(s){ return LINE.find(x=>x.id===s.channels.linegift.id) || null; }
+function plainText(lp){
+  const t=[ (lp&&lp.catchphrase)||"", (lp&&lp.description)||"" ].filter(Boolean).join(" ");
+  return t.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+}
+
+/* ---------- 読み込み ---------- */
+async function init(){
+  try {
+    const d = await (await fetch("products.json?_="+Date.now())).json();
+    LINE = (d.products||[]);
+  } catch { LINE=[]; }
+  await loadServer();
+}
+async function loadServer(){
+  setSync("saving","読み込み中…");
+  try {
+    const r = await fetch(SB_TABLE + "?select=*&order=position.asc", { headers: sbHeaders() });
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    DATA = (await r.json()).map(normalize);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(DATA));
+    setSync("ok","サーバと同期済み ✓");
+  } catch (e) {
+    const c = localStorage.getItem(CACHE_KEY);
+    DATA = c ? JSON.parse(c).map(normalize) : [];
+    setSync("err","オフライン: キャッシュ表示中");
+  }
+  render();
+}
+
+/* ---------- 保存 ---------- */
+const timers = {};
+function scheduleSave(id){ clearTimeout(timers[id]); setSync("saving","保存中…"); timers[id]=setTimeout(()=>pushRow(id),500); }
+async function pushRow(id){
+  const s = DATA.find(x=>x.id===id); if(!s) return;
+  const body = { id:s.id, name:s.name, line_id:s.channels.linegift.id||"", items:s.items||[], channels:s.channels,
+    memo:s.memo||"", position:s.position||0, yahoo_suggestion:s.yahoo_suggestion||null, yahoo_copy:s.yahoo_copy||null };
+  try {
+    const r = await fetch(SB_TABLE, { method:"POST", headers: sbHeaders({ "Prefer":"resolution=merge-duplicates,return=minimal" }), body: JSON.stringify([body]) });
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    setSync("ok","サーバ保存済み ✓");
+    localStorage.setItem(CACHE_KEY, JSON.stringify(DATA));
+  } catch(e){ setSync("err","⚠ サーバ未保存（後で再試行）"); }
+}
+
+/* ---------- 描画 ---------- */
+function currentCopyText(s, lp){
+  return {
+    headline: (lp&&lp.catchphrase)||"",
+    caption: lp ? (lp.name_full||lp.name) : (s.name||""),
+    abstract: (lp&&lp.catchphrase)||"",
+    explanation: plainText(lp),
+  };
+}
+function suggestionBlock(s, si){
+  const sug = s.yahoo_suggestion;
+  if (!sug) return "";
+  const notes = (sug.proofread_notes||[]).map(n=>`<li>${esc(n)}</li>`).join("");
+  const prompts = sug.image_prompts || [];
+  const imgHtml = prompts.map((p,i)=>
+    `<div class="imgprompt"><span class="badge">画像案${i+1}</span><span>${esc(p)}</span></div>`
+  ).join("");
+  const compNote = sug.competitor_scrape_ok===false
+    ? `<div class="hint">※ 競合出品の取得に失敗したため、一般的な観点での提案です（<a href="${esc(sug.competitor_source||'#')}" target="_blank" rel="noopener">検索結果を開く</a>）</div>`
+    : (sug.competitor_source ? `<div class="hint">競合参照: <a href="${esc(sug.competitor_source)}" target="_blank" rel="noopener">Yahoo!ショッピング検索結果</a></div>` : "");
+  const isApplied = s.yahoo_copy && s.yahoo_copy.headline===sug.headline && s.yahoo_copy.explanation===sug.explanation;
+  return `
+    <div class="suggestion" data-si="${si}">
+      <div class="row"><label>見出し (headline)</label><input data-sf="headline" value="${esc(sug.headline)}"></div>
+      <div class="row"><label>キャプション (caption)</label><input data-sf="caption" value="${esc(sug.caption)}"></div>
+      <div class="row"><label>要約 (abstract)</label><textarea data-sf="abstract">${esc(sug.abstract)}</textarea></div>
+      <div class="row"><label>説明文 (explanation)</label><textarea data-sf="explanation">${esc(sug.explanation)}</textarea></div>
+      <div class="row notes">
+        <label>校正・改善メモ</label>
+        <ul>${notes || "<li>特になし</li>"}</ul>
+      </div>
+      <div class="row notes">
+        <label>競合比較・差別化提案</label>
+        <div>${esc(sug.competitor_notes||"")}</div>
+        ${compNote}
+      </div>
+      <div class="row">
+        <label>画像生成プロンプト案（3案）</label>
+        <div class="hint">画像は生成しません。この文言を画像生成AIツール（Midjourney等）に入力してご利用ください。</div>
+        <div class="imgprompts">${imgHtml}</div>
+      </div>
+      <div class="actions">
+        <button class="primary" data-act="apply" data-si="${si}">${isApplied ? "適用済み ✓（再適用）" : "この内容を適用"}</button>
+        <button class="ghost" data-act="regen" data-si="${si}">提案を再生成</button>
+        ${s.yahoo_copy ? '<button class="ghost" data-act="clear" data-si="'+si+'">適用を取り消す</button>' : ""}
+      </div>
+    </div>`;
+}
+function render(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const list = document.getElementById("list"); list.innerHTML="";
+  const targets = DATA.filter(s => s.channels.yahoo.listed);
+  let shown = 0;
+
+  targets.forEach((s)=>{
+    const si = DATA.indexOf(s);
+    const lp = lineOf(s);
+    const title = s.name || (lp?(lp.name_full||lp.name):"");
+    const hay = [s.id, title].join(" ").toLowerCase();
+    if (q && !hay.includes(q)) return;
+    shown++;
+    const cur = currentCopyText(s, lp);
+    const status = s.yahoo_copy ? '<span class="chip applied">適用済み</span>'
+      : (s.yahoo_suggestion ? '<span class="chip draft">提案あり（未適用）</span>' : "");
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML =
+      `<div class="card-head">
+         <input type="checkbox" data-select="${s.id}" ${selected.has(s.id)?"checked":""}>
+         <div style="flex:1">
+           <div class="card-title">${esc(title)} <span style="color:var(--muted);font-weight:400;font-size:.8rem">(${esc(s.id)})</span> ${status}</div>
+           <div class="card-sub">現在の見出し: ${esc(cur.headline)||"（未設定）"}</div>
+           <div class="card-current">${esc(cur.explanation).slice(0,140)}${cur.explanation.length>140?"…":""}</div>
+         </div>
+       </div>
+       <div class="loading" data-loading="${s.id}" style="display:none">改善案を生成中…（競合検索→AI提案、数十秒かかることがあります）</div>
+       <div class="err-box" data-error="${s.id}" style="${genErrors[s.id]?'':'display:none'}">${esc(genErrors[s.id]||"")}</div>
+       <div data-suggestion-slot="${s.id}">${suggestionBlock(s, si)}</div>`;
+    list.appendChild(el);
+  });
+  document.getElementById("empty").style.display = shown ? "none" : "block";
+  document.getElementById("selCount").textContent = selected.size;
+}
+
+/* ---------- 選択 ---------- */
+document.getElementById("list").addEventListener("change",e=>{
+  if (e.target.dataset.select){
+    const id=e.target.dataset.select;
+    if (e.target.checked) selected.add(id); else selected.delete(id);
+    document.getElementById("selCount").textContent = selected.size;
+  }
+});
+document.getElementById("selAll").addEventListener("click",()=>{
+  DATA.filter(s=>s.channels.yahoo.listed).forEach(s=>selected.add(s.id)); render();
+});
+document.getElementById("selNone").addEventListener("click",()=>{ selected.clear(); render(); });
+document.getElementById("q").addEventListener("input",render);
+document.getElementById("reload").addEventListener("click",()=>{ if(confirm("サーバから最新を読み込みます。よろしいですか？")) loadServer(); });
+
+/* ---------- 改善提案の生成（同時実行数2） ---------- */
+async function requestSuggestion(s){
+  const lp = lineOf(s);
+  const title = s.name || (lp?(lp.name_full||lp.name):"");
+  const payload = {
+    sale_id: s.id,
+    title,
+    catchphrase: lp ? lp.catchphrase : "",
+    description: lp ? lp.description : "",
+    spec: lp ? lp.spec : "",
+    price: lp ? lp.price : "",
+    images: lp && lp.images ? lp.images : (lp && lp.image_url ? [lp.image_url] : []),
+  };
+  delete genErrors[s.id];
+  const loadingEl = document.querySelector(`[data-loading="${s.id}"]`);
+  if (loadingEl) loadingEl.style.display = "block";
+  try {
+    const r = await fetch(EDGE_URL, { method:"POST", headers: sbHeaders(), body: JSON.stringify(payload) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || ("HTTP "+r.status));
+    s.yahoo_suggestion = j;
+    scheduleSave(s.id);
+  } catch (e) {
+    genErrors[s.id] = "⚠ 提案の生成に失敗しました: " + (e.message||e);
+  } finally {
+    if (loadingEl) loadingEl.style.display = "none";
+    render();
+  }
+}
+async function runQueue(ids, concurrency){
+  const queue = ids.slice();
+  async function worker(){ while(queue.length){ const id = queue.shift(); const s = DATA.find(x=>x.id===id); if (s) await requestSuggestion(s); } }
+  await Promise.all(Array.from({length: Math.min(concurrency, ids.length)}, worker));
+}
+document.getElementById("genBtn").addEventListener("click", async ()=>{
+  if (!selected.size){ alert("提案を生成する商品を選択してください。"); return; }
+  const ids = [...selected];
+  document.getElementById("genBtn").disabled = true;
+  await runQueue(ids, 2);
+  document.getElementById("genBtn").disabled = false;
+});
+
+/* ---------- 提案の編集・適用・取消 ---------- */
+document.getElementById("list").addEventListener("input", e=>{
+  const f = e.target.dataset.sf; if (!f) return;
+  const box = e.target.closest("[data-si]"); const si = +box.dataset.si;
+  const s = DATA[si]; if (!s || !s.yahoo_suggestion) return;
+  s.yahoo_suggestion[f] = e.target.value;
+  scheduleSave(s.id);
+});
+document.getElementById("list").addEventListener("click", e=>{
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const si = +b.dataset.si, s = DATA[si]; if (!s) return;
+  if (b.dataset.act === "apply"){
+    const sug = s.yahoo_suggestion; if (!sug) return;
+    s.yahoo_copy = { headline: sug.headline, caption: sug.caption, abstract: sug.abstract, explanation: sug.explanation, applied_at: new Date().toISOString() };
+    scheduleSave(s.id); render();
+  } else if (b.dataset.act === "clear"){
+    if (!confirm(`${s.id} の適用を取り消しますか？（Yahoo取込CSVは元の内容に戻ります）`)) return;
+    s.yahoo_copy = null; scheduleSave(s.id); render();
+  } else if (b.dataset.act === "regen"){
+    if (!confirm("提案を再生成しますか？（現在の下書きは上書きされます）")) return;
+    requestSuggestion(s);
+  }
+});
+
+if (sessionStorage.getItem(GATE_KEY)==="1") unlock();
+else document.getElementById("gatepw").focus();
+</script>
+</body>
+</html>

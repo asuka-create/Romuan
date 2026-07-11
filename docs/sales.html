@@ -144,6 +144,7 @@
       <a href="index.html">LINE GIFT 商品リスト</a>
       <a href="manage.html">社内 商品マスター</a>
       <a href="sales.html" class="active">販売登録</a>
+      <a href="brushup.html">ブラッシュアップ</a>
     </nav>
     <div class="meta">
       1販売＝1出品。社内商品を「×数量」で組み立て、LINE / Yahoo / Shopify の掲載ID・URLを記録します。<br>
@@ -556,6 +557,7 @@ function buildYahooCSV(list){
   const row=obj=>YAHOO_COLS.map(c=>csvCell(obj[c]!=null?obj[c]:"")).join(",");
   list.forEach(s=>{
     const lp=lineOf(s); if(!lp && !s.name) return;
+    const yc=s.yahoo_copy||null;   // ブラッシュアップで承認済みの上書きコピー（あれば優先）
     const title=s.name || (lp?(lp.name_full||lp.name):"");
     const yid=(s.channels.yahoo.id||"").trim();
     const code=yid || String(s.id).toLowerCase();   // 商品コード（未入力ならSALE IDを流用）
@@ -565,10 +567,10 @@ function buildYahooCSV(list){
       "code": code,
       "original-price": (lp && lp.regular_price && lp.regular_price!==lp.price) ? lp.regular_price : "",
       "price": lp ? lp.price : "",
-      "headline": sjisTrunc((lp&&lp.catchphrase)||"", 60, 30),
-      "caption": lp ? (lp.name_full||lp.name) : "",
-      "abstract": sjisTrunc((lp&&lp.catchphrase)||"", 500, 250),
-      "explanation": sjisTrunc(plainText(lp), 1000, 500),   // 500文字/1000バイト以内
+      "headline": sjisTrunc((yc&&yc.headline)||(lp&&lp.catchphrase)||"", 60, 30),
+      "caption": (yc&&yc.caption) || (lp ? (lp.name_full||lp.name) : ""),
+      "abstract": sjisTrunc((yc&&yc.abstract)||(lp&&lp.catchphrase)||"", 500, 250),
+      "explanation": sjisTrunc((yc&&yc.explanation)||plainText(lp), 1000, 500),   // 500文字/1000バイト以内
       "taxable": "1",                                 // 課税
       "product-category": yhCat,
       "delivery": yhDelivery                           // 配送グループ
