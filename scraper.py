@@ -41,6 +41,11 @@ SEARCH_URL  = BASE + "/api/item/search"
 SHOP_URL    = f"{BASE}/sb/{SHORT_PATH}"          # 商品ページの親URL
 JST         = timezone(timedelta(hours=9))
 
+# Supabase（販売登録の自動追加先）。公開キーはGitHub Pagesでも公開済み。
+SB_URL   = os.environ.get("SUPABASE_URL", "https://qbfjeitlzrtazavklhde.supabase.co")
+SB_KEY   = os.environ.get("SUPABASE_KEY", "sb_publishable_gCDMwBOWaSwq6uh34lWRXA_rYQ6VptD")
+SB_SALES = SB_URL + "/rest/v1/romuan_sales"
+
 HERE        = os.path.dirname(os.path.abspath(__file__))
 DOCS_DIR    = os.path.join(HERE, "docs")
 JSON_PATH   = os.path.join(DOCS_DIR, "products.json")
@@ -214,6 +219,71 @@ def load_existing():
 
 
 # ----------------------------------------------------------------------------
+# Supabase: 新しいLINE商品を販売登録(romuan_sales)へ自動追加
+# ----------------------------------------------------------------------------
+def sb_request(method, path, body=None):
+    headers = {
+        "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY,
+        "Content-Type": "application/json",
+    }
+    if body is not None:
+        headers["Prefer"] = "return=minimal"
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    req = urllib.request.Request(path, data=data, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        raw = resp.read().decode("utf-8")
+    return json.loads(raw) if raw.strip() else None
+
+
+def sync_sales(products):
+    """LINEの現行商品のうち、まだ販売登録が無いものをSupabaseへ自動追加する。"""
+    try:
+        existing = sb_request("GET", SB_SALES + "?select=id,line_id,position") or []
+    except Exception as e:
+        print(f"  [警告] Supabase読込失敗、販売登録の自動追加をスキップ: {e}", file=sys.stderr)
+        return
+
+    have = {str(s.get("line_id")) for s in existing if s.get("line_id")}
+    max_num = max_pos = 0
+    for s in existing:
+        m = re.match(r"SALE(\d+)$", s.get("id", "") or "")
+        if m:
+            max_num = max(max_num, int(m.group(1)))
+        max_pos = max(max_pos, s.get("position") or 0)
+
+    new_rows = []
+    for p in products:
+        pid = str(p["id"])
+        if pid in have:
+            continue
+        max_num += 1
+        max_pos += 1
+        new_rows.append({
+            "id": f"SALE{max_num:04d}",
+            "name": p.get("name_full") or p.get("name") or "",
+            "line_id": pid,
+            "items": [],
+            "channels": {
+                "linegift": {"listed": True, "id": pid, "url": f"{SHOP_URL}/{pid}"},
+                "yahoo":    {"listed": False, "id": "", "url": ""},
+                "shopify":  {"listed": False, "id": "", "url": ""},
+            },
+            "memo": "",
+            "position": max_pos,
+        })
+
+    if new_rows:
+        try:
+            sb_request("POST", SB_SALES, new_rows)
+            for r in new_rows:
+                print(f"    + 販売登録 追加 {r['id']}  {r['name'][:30]}")
+        except Exception as e:
+            print(f"  [警告] 販売登録の追加に失敗: {e}", file=sys.stderr)
+            return
+    print(f"  販売登録 自動追加: {len(new_rows)} 件")
+
+
+# ----------------------------------------------------------------------------
 # メイン
 # ----------------------------------------------------------------------------
 def main():
@@ -308,6 +378,9 @@ def main():
 
     write_csv(products)
     write_meta(run_date, new_products, removed, len(matched))
+
+    # 新しいLINE商品を販売登録へ自動追加（掲載中のものだけ）
+    sync_sales([p for p in products if p.get("available", True)])
 
     print(f"  新規: {len(new_products)} 件 / 販売終了: {len(removed)} 件")
     if new_products:
