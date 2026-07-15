@@ -7,18 +7,10 @@
 <title>社内 商品マスター | 美酒館トラッカー</title>
 <style>
   :root {
-    --bg: #eceae6; --surface: #ffffff; --surface2: #f6f4f0; --text: #1c1a17; --muted: #78716a;
-    --line: #ddd8d0; --accent: #7b1e2b; --accent2: #a83246;
+    --bg: #ffffff; --surface: #ffffff; --surface2: #f6f7f9; --text: #1c1a17; --muted: #6b7280;
+    --line: #e5e7eb; --accent: #7b1e2b; --accent2: #a83246;
     --ok: #1a7f5a; --err: #c0392b; --warn: #b8791b;
     --shadow: 0 2px 6px rgba(60,40,30,.10), 0 1px 2px rgba(60,40,30,.06);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #13110d; --surface: #24201a; --surface2: #2d2822; --text: #efe9df; --muted: #a49c8f;
-      --line: #3a352e; --accent: #e0899a; --accent2: #e0899a;
-      --ok: #4fd6a0; --err: #e08a7d; --warn: #e0b463;
-      --shadow: 0 2px 8px rgba(0,0,0,.4);
-    }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -28,9 +20,14 @@
   .wrap { max-width: 1000px; margin: 0 auto; }
   h1 { font-size: 1.2rem; margin: 0 0 4px; }
   h1 .en { color: var(--muted); font-weight: 400; font-size: .78rem; margin-left: 6px; }
-  nav { display: flex; gap: 14px; margin: 8px 0 2px; font-size: .86rem; flex-wrap: wrap; }
-  nav a { color: var(--muted); text-decoration: none; padding-bottom: 3px; }
-  nav a.active { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 600; }
+  nav { display: flex; gap: 8px; margin: 12px 0 2px; flex-wrap: wrap; }
+  nav a { display: inline-flex; align-items: center; gap: 7px; font-size: .85rem; font-weight: 600;
+    color: var(--muted); text-decoration: none; padding: 9px 15px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--surface2); line-height: 1; transition: .15s; }
+  nav a:hover { color: var(--accent); border-color: var(--accent); background: #fff; }
+  nav a.active { background: var(--accent); border-color: var(--accent); color: #fff;
+    box-shadow: 0 2px 6px rgba(123,30,43,.25); }
+  nav a .ic { font-size: 1.05rem; }
   .meta { color: var(--muted); font-size: .82rem; margin-top: 6px; }
   .meta b { color: var(--text); }
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
@@ -82,10 +79,10 @@
   <div class="wrap">
     <h1>社内 商品マスター<span class="en">base products (在庫単位)</span></h1>
     <nav>
-      <a href="index.html">LINE GIFT 商品リスト</a>
-      <a href="manage.html" class="active">社内 商品マスター</a>
-      <a href="sales.html">販売登録</a>
-      <a href="brushup.html">ブラッシュアップ</a>
+      <a href="index.html"><span class="ic">🎁</span>LINE GIFT 商品</a>
+      <a href="manage.html" class="active"><span class="ic">📦</span>社内 商品マスター</a>
+      <a href="sales.html"><span class="ic">🏷️</span>販売登録</a>
+      <a href="brushup.html"><span class="ic">✨</span>ブラッシュアップ</a>
     </nav>
     <div class="meta">
       在庫を持つ最小単位の商品です。セットや複数本の出品は「販売登録」で組み立てます。<br>
