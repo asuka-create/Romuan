@@ -18,21 +18,43 @@
                  "Meiryo", system-ui, sans-serif;
     line-height: 1.6; -webkit-font-smoothing: antialiased;
   }
+  /* ---- サイドバー ---- */
+  .app-shell { display: flex; align-items: flex-start; min-height: 100vh; }
+  .sidebar { width: 232px; flex: none; background: var(--surface); border-right: 1px solid var(--line);
+    padding: 20px 14px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; box-sizing: border-box; }
+  .sidebar .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; padding: 0 4px; }
+  .sidebar .brand-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex: none; }
+  .sidebar .brand-title { font-weight: 700; font-size: .92rem; line-height: 1.3; }
+  .sidebar .brand-sub { font-size: .66rem; color: var(--muted); letter-spacing: .06em; font-weight: 600; }
+  .sidenav { display: flex; flex-direction: column; gap: 3px; }
+  .sidenav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
+    color: var(--muted); text-decoration: none; font-size: .84rem; font-weight: 600; transition: .15s; }
+  .sidenav a .ic { font-size: 1.05rem; width: 1.3em; text-align: center; }
+  .sidenav a:hover { background: var(--surface2); color: var(--text); }
+  .sidenav a.active { background: var(--accent); color: #fff; box-shadow: 0 2px 6px rgba(123,30,43,.25); }
+  .sidebar-add { margin-top: 18px; background: var(--accent); color: #fff; border: none; border-radius: 10px;
+    padding: 12px 10px; font-weight: 700; font-size: .84rem; cursor: pointer; }
+  .sidebar-bottom { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+  .sidebar-bottom a { display: flex; align-items: center; gap: 8px; color: var(--muted); text-decoration: none; font-size: .8rem; padding: 8px 12px; border-radius: 8px; }
+  .sidebar-bottom a:hover { background: var(--surface2); color: var(--text); }
+  .main-area { flex: 1; min-width: 0; }
+  @media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: relative; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+    .sidebar .brand { margin-bottom: 0; }
+    .sidenav { flex-direction: row; flex-wrap: wrap; }
+    .sidebar-add { margin-top: 0; }
+    .sidebar-bottom { margin-top: 0; padding-top: 0; border-top: none; flex-direction: row; }
+  }
+
   header {
     padding: 22px 18px 16px; border-bottom: 1px solid var(--line);
     background: var(--card);
   }
-  .wrap { max-width: 1080px; margin: 0 auto; }
+  .wrap { max-width: 1080px; margin: 0; }
   h1 { font-size: 1.25rem; margin: 0 0 4px; letter-spacing: .02em; }
   h1 .en { color: var(--muted); font-weight: 400; font-size: .8rem; margin-left: 6px; }
-  nav { display: flex; gap: 8px; margin: 12px 0 2px; flex-wrap: wrap; }
-  nav a { display: inline-flex; align-items: center; gap: 7px; font-size: .85rem; font-weight: 600;
-    color: var(--muted); text-decoration: none; padding: 9px 15px; border-radius: 10px;
-    border: 1px solid var(--line); background: var(--surface2); line-height: 1; transition: .15s; }
-  nav a:hover { color: var(--accent); border-color: var(--accent); background: #fff; }
-  nav a.active { background: var(--accent); border-color: var(--accent); color: #fff;
-    box-shadow: 0 2px 6px rgba(123,30,43,.25); }
-  nav a .ic { font-size: 1.05rem; }
   .meta { color: var(--muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: 6px 16px; }
   .meta a { color: var(--accent); text-decoration: none; }
   .controls {
@@ -45,7 +67,7 @@
   }
   input[type="search"] { flex: 1; min-width: 180px; }
   label.chk { font-size: .84rem; color: var(--muted); display: flex; align-items: center; gap: 5px; cursor: pointer; }
-  main { max-width: 1080px; margin: 0 auto; padding: 16px 14px 60px; }
+  main { max-width: 1080px; margin: 0; padding: 16px 14px 60px; }
   .count { font-size: .85rem; color: var(--muted); margin: 4px 2px 14px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
   .card {
@@ -110,15 +132,32 @@
     <div class="err" id="gateerr"></div>
   </div>
 </div>
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-icon">🍶</div>
+    <div>
+      <div class="brand-title">美酒館トラッカー</div>
+      <div class="brand-sub">OPERATIONS HUB</div>
+    </div>
+  </div>
+  <nav class="sidenav">
+    <a href="manage.html"><span class="ic">📦</span>社内 商品マスター</a>
+    <a href="sales.html"><span class="ic">🏷️</span>販売登録</a>
+    <a href="fulfillment.html"><span class="ic">🚚</span>出庫管理</a>
+    <a href="stock_in.html"><span class="ic">📥</span>入荷管理</a>
+    <a href="index.html" class="active"><span class="ic">🎁</span>LINE GIFT 商品</a>
+    <a href="orders.html"><span class="ic">📮</span>注文管理</a>
+    <a href="brushup.html"><span class="ic">✨</span>ブラッシュアップ</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a href="#" id="logoutBtn">↩ ログアウト</a>
+  </div>
+</aside>
+<div class="main-area">
 <header>
   <div class="wrap">
     <h1>美酒館 商品リスト<span class="en">LINE GIFT tracker</span></h1>
-    <nav>
-      <a href="index.html" class="active"><span class="ic">🎁</span>LINE GIFT 商品</a>
-      <a href="manage.html"><span class="ic">📦</span>社内 商品マスター</a>
-      <a href="sales.html"><span class="ic">🏷️</span>販売登録</a>
-      <a href="brushup.html"><span class="ic">✨</span>ブラッシュアップ</a>
-    </nav>
     <div class="meta">
       <span id="updated">読み込み中…</span>
       <span>販売中 <b id="total">-</b> 件</span>
@@ -145,6 +184,8 @@
   <div class="empty" id="empty" style="display:none">該当する商品がありません。</div>
 </main>
 <footer id="footer"></footer>
+</div>
+</div>
 
 <script>
 const NEW_DAYS = 7; // 初回検出から何日間 NEW バッジを付けるか
@@ -274,6 +315,11 @@ async function tryUnlock() {
 document.getElementById("gatebtn").addEventListener("click", tryUnlock);
 document.getElementById("gatepw").addEventListener("keydown", e => {
   if (e.key === "Enter") tryUnlock();
+});
+document.getElementById("logoutBtn").addEventListener("click", e=>{
+  e.preventDefault();
+  sessionStorage.removeItem(GATE_KEY);
+  location.reload();
 });
 // 同じセッション中は再入力不要
 if (sessionStorage.getItem(GATE_KEY) === "1") {

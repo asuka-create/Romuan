@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>出庫管理 | 美酒館トラッカー</title>
+<style>
+  :root {
+    --bg: #ffffff; --surface: #ffffff; --surface2: #f6f7f9; --text: #1c1a17; --muted: #6b7280;
+    --line: #e5e7eb; --accent: #7b1e2b; --accent2: #a83246;
+    --ok: #1a7f5a; --err: #c0392b; --warn: #b8791b;
+    --shadow: 0 2px 6px rgba(60,40,30,.10), 0 1px 2px rgba(60,40,30,.06);
+    --shadow-lg: 0 6px 20px rgba(60,40,30,.14);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  /* ---- サイドバー ---- */
+  .app-shell { display: flex; align-items: flex-start; min-height: 100vh; }
+  .sidebar { width: 232px; flex: none; background: var(--surface); border-right: 1px solid var(--line);
+    padding: 20px 14px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; box-sizing: border-box; }
+  .sidebar .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; padding: 0 4px; }
+  .sidebar .brand-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex: none; }
+  .sidebar .brand-title { font-weight: 700; font-size: .92rem; line-height: 1.3; }
+  .sidebar .brand-sub { font-size: .66rem; color: var(--muted); letter-spacing: .06em; font-weight: 600; }
+  .sidenav { display: flex; flex-direction: column; gap: 3px; }
+  .sidenav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
+    color: var(--muted); text-decoration: none; font-size: .84rem; font-weight: 600; transition: .15s; }
+  .sidenav a .ic { font-size: 1.05rem; width: 1.3em; text-align: center; }
+  .sidenav a:hover { background: var(--surface2); color: var(--text); }
+  .sidenav a.active { background: var(--accent); color: #fff; box-shadow: 0 2px 6px rgba(123,30,43,.25); }
+  .sidebar-add { margin-top: 18px; background: var(--accent); color: #fff; border: none; border-radius: 10px;
+    padding: 12px 10px; font-weight: 700; font-size: .84rem; cursor: pointer; }
+  .sidebar-bottom { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+  .sidebar-bottom a { display: flex; align-items: center; gap: 8px; color: var(--muted); text-decoration: none; font-size: .8rem; padding: 8px 12px; border-radius: 8px; }
+  .sidebar-bottom a:hover { background: var(--surface2); color: var(--text); }
+  .main-area { flex: 1; min-width: 0; }
+  @media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: relative; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+    .sidebar .brand { margin-bottom: 0; }
+    .sidenav { flex-direction: row; flex-wrap: wrap; }
+    .sidebar-add { margin-top: 0; }
+    .sidebar-bottom { margin-top: 0; padding-top: 0; border-top: none; flex-direction: row; }
+  }
+
+  header { padding: 18px 18px 14px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 20; }
+  .wrap { max-width: 1000px; margin: 0; }
+  h1 { font-size: 1.2rem; margin: 0 0 4px; }
+  h1 .en { color: var(--muted); font-weight: 400; font-size: .78rem; margin-left: 6px; }
+  .meta { color: var(--muted); font-size: .82rem; margin-top: 6px; }
+  .meta b { color: var(--text); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  input[type="search"] { flex: 1; min-width: 160px; font-size: .9rem; padding: 8px 11px;
+    border: 1px solid var(--line); border-radius: 9px; background: var(--surface2); color: var(--text); }
+  button { font-size: .85rem; font-weight: 600; padding: 8px 13px; border: 1px solid var(--line);
+    border-radius: 9px; background: var(--surface); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.ghost { background: transparent; }
+  .toolbar select { font-size: .85rem; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface2); color: var(--text); }
+  .sync { font-size: .78rem; margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .sync.ok .dot { background: var(--ok); } .sync.saving .dot { background: var(--warn); }
+  .sync.err .dot { background: var(--err); }
+  main { max-width: 1000px; margin: 0; padding: 16px 14px 90px; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+
+  .row { background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); margin-bottom: 10px; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .row:hover { box-shadow: var(--shadow-lg); }
+  .row.stage-none { opacity: .7; }
+  .chbadge { font-size: .68rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; color: #fff; background: var(--muted); white-space: nowrap; }
+  .stagebadge { font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .stagebadge.none { background: var(--surface2); color: var(--muted); border: 1px solid var(--line); }
+  .stagebadge.reserved { background: #fdf1e0; color: var(--warn); border: 1px solid var(--warn); }
+  .stagebadge.shipped { background: #e4f4ec; color: var(--ok); border: 1px solid var(--ok); }
+  .oid { font-family: ui-monospace, monospace; font-size: .74rem; color: var(--muted); white-space: nowrap; }
+  .prodinfo { flex: 1 1 260px; min-width: 200px; font-size: .88rem; }
+  .prodinfo .name { font-weight: 600; }
+  .prodinfo .sub { font-size: .76rem; color: var(--muted); }
+  .salespick { flex: 1 1 220px; min-width: 180px; }
+  .salespick select { width: 100%; font-size: .82rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface2); }
+  .statusSel { font-size: .8rem; padding: 6px 8px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface2); }
+  .shipname { font-size: .8rem; color: var(--muted); min-width: 100px; }
+  .actions { display: flex; gap: 6px; margin-left: auto; }
+  button.finalize { background: var(--ok); color: #fff; border-color: var(--ok); }
+  button.newsale { font-size: .76rem; padding: 5px 9px; }
+
+  #gate { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  #gate .box { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-lg); padding: 30px 26px; width: 100%; max-width: 360px; text-align: center; }
+  #gate h2 { margin: 0 0 6px; font-size: 1.05rem; }
+  #gate p { margin: 0 0 18px; color: var(--muted); font-size: .82rem; }
+  #gate input { width: 100%; font-size: 1rem; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface2); color: var(--text); text-align: center; margin-bottom: 12px; }
+  #gate button { width: 100%; font-size: .95rem; padding: 11px; border: none; border-radius: 10px; background: var(--accent); color: #fff; }
+  #gate .err { color: var(--err); font-size: .8rem; min-height: 1.2em; margin-top: 10px; }
+  body.locked { overflow: hidden; }
+</style>
+</head>
+<body class="locked">
+<div id="gate">
+  <div class="box">
+    <h2>出庫管理</h2>
+    <p>閲覧には合言葉が必要です</p>
+    <input type="password" id="gatepw" placeholder="合言葉を入力" autocomplete="current-password">
+    <button id="gatebtn">開く</button>
+    <div class="err" id="gateerr"></div>
+  </div>
+</div>
+
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-icon">🍶</div>
+    <div>
+      <div class="brand-title">美酒館トラッカー</div>
+      <div class="brand-sub">OPERATIONS HUB</div>
+    </div>
+  </div>
+  <nav class="sidenav">
+    <a href="manage.html"><span class="ic">📦</span>社内 商品マスター</a>
+    <a href="sales.html"><span class="ic">🏷️</span>販売登録</a>
+    <a href="fulfillment.html" class="active"><span class="ic">🚚</span>出庫管理</a>
+    <a href="stock_in.html"><span class="ic">📥</span>入荷管理</a>
+    <a href="index.html"><span class="ic">🎁</span>LINE GIFT 商品</a>
+    <a href="orders.html"><span class="ic">📮</span>注文管理</a>
+    <a href="brushup.html"><span class="ic">✨</span>ブラッシュアップ</a>
+  </nav>
+  <button class="sidebar-add" id="sidebarAdd" style="display:none"></button>
+  <div class="sidebar-bottom">
+    <a href="#" id="logoutBtn">↩ ログアウト</a>
+  </div>
+</aside>
+<div class="main-area">
+<header>
+  <div class="wrap">
+    <h1>出庫管理<span class="en">reserve &rarr; ship</span></h1>
+    <div class="meta">
+      注文（LINE GIFT・Yahoo・Shopify・ToB卸など全チャネル）の「確保→出荷確定」を管理します。出荷確定にすると社内商品マスターの実在庫が減算されます。<br>
+      未紐付け <b id="cnone">-</b> ・ 確保中 <b id="cres">-</b> ・ 出荷確定済み <b id="cship">-</b>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="注文ID・商品名・お届け先名で検索…">
+      <select id="channelFilter">
+        <option value="">すべてのチャネル</option>
+      </select>
+      <select id="stageFilter">
+        <option value="">すべての状態</option>
+        <option value="none">未紐付け</option>
+        <option value="reserved" selected>確保中</option>
+        <option value="shipped">出荷確定済み</option>
+      </select>
+      <button id="addorder" class="primary">＋ ToB/手動で注文を追加</button>
+      <button id="reload" class="ghost">サーバから再読込</button>
+      <span class="sync" id="sync"><span class="dot"></span><span id="syncmsg">—</span></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="list"></div>
+  <div class="empty" id="empty" style="display:none">該当する注文がありません。</div>
+</main>
+</div>
+</div>
+
+<script>
+const PW_HASH = "86138699a5c3861fd957004d5c07c6466e7470eb0cffd2152d928a5bcf9a738a";
+const GATE_KEY = "bijoukan_gate_ok";
+const CACHE_KEY = "orders_cache_v1";
+const SB_URL = "https://qbfjeitlzrtazavklhde.supabase.co";
+const SB_KEY = "sb_publishable_gCDMwBOWaSwq6uh34lWRXA_rYQ6VptD";
+const SB_ORDERS = SB_URL + "/rest/v1/romuan_orders";
+const SB_SALES  = SB_URL + "/rest/v1/romuan_sales";
+const SB_PRODUCTS = SB_URL + "/rest/v1/romuan_products";
+const SB_STOCKIN = SB_URL + "/rest/v1/romuan_stock_in";
+const CHANNEL_LABEL = { linegift:"LINE GIFT", yahoo:"Yahoo!ショッピング", shopify:"Shopify", tob:"ToB（卸・法人）", manual:"手動/その他" };
+
+let DATA = [], SALES = [], PRODUCTS = [], STOCKIN = [];
+
+function sbHeaders(extra){ return Object.assign({ "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json" }, extra||{}); }
+
+/* ---------- 合言葉ゲート ---------- */
+async function sha256(str){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function unlock(){ document.getElementById("gate").style.display="none"; document.body.classList.remove("locked"); init(); }
+async function tryUnlock(){ const pw=document.getElementById("gatepw").value; if(await sha256(pw)===PW_HASH){ sessionStorage.setItem(GATE_KEY,"1"); unlock(); } else { document.getElementById("gateerr").textContent="合言葉が違います"; document.getElementById("gatepw").select(); } }
+document.getElementById("gatebtn").addEventListener("click",tryUnlock);
+document.getElementById("gatepw").addEventListener("keydown",e=>{ if(e.key==="Enter") tryUnlock(); });
+
+/* ---------- 同期ステータス ---------- */
+function setSync(state,msg){ document.getElementById("sync").className="sync "+state; document.getElementById("syncmsg").textContent=msg; }
+
+/* ---------- 正規化 ---------- */
+function normalize(o){
+  return Object.assign({
+    id:"", channel:"manual", order_id:"", order_sub_no:1, sales_id:null,
+    product_code:"", product_name:"", variation_code:"", jan_code:"",
+    qty:1, unit_price:0, product_total:0, shipping_fee:0, order_total:0,
+    ship_by_date:"", customer_user_id:"",
+    ship_name:"", ship_phone:"", ship_zip:"", ship_pref:"", ship_city:"", ship_addr:"",
+    gift_sender_name:"", campaign_info:"",
+    carrier:"", tracking_no:"", ship_date:"", order_status_raw:"", status:"pending",
+    fulfillment_stage:"none", stock_items:[], lot_consumption:[], memo:""
+  }, o);
+}
+
+/* ---------- 読み込み ---------- */
+async function init(){
+  try {
+    const r = await fetch(SB_SALES + "?select=id,name,items,external_code,channels&order=position.asc", { headers: sbHeaders() });
+    SALES = r.ok ? await r.json() : [];
+  } catch { SALES = []; }
+  try {
+    const r = await fetch(SB_PRODUCTS + "?select=id,name,stock,reserved&order=position.asc", { headers: sbHeaders() });
+    PRODUCTS = r.ok ? await r.json() : [];
+  } catch { PRODUCTS = []; }
+  try {
+    const r = await fetch(SB_STOCKIN + "?select=id,product_id,expiration_date,remaining_qty&order=expiration_date.asc", { headers: sbHeaders() });
+    STOCKIN = r.ok ? await r.json() : [];
+  } catch { STOCKIN = []; }
+  await loadServer();
+}
+async function loadServer(){
+  setSync("saving","読み込み中…");
+  try {
+    const r = await fetch(SB_ORDERS + "?select=*&order=updated_at.desc", { headers: sbHeaders() });
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    DATA = (await r.json()).map(normalize);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(DATA));
+    setSync("ok","サーバと同期済み ✓");
+  } catch (e) {
+    const c = localStorage.getItem(CACHE_KEY);
+    DATA = c ? JSON.parse(c).map(normalize) : [];
+    setSync("err","オフライン: キャッシュ表示中");
+  }
+  render();
+}
+
+/* ---------- サーバ保存 ---------- */
+function orderBody(o){
+  return {
+    id:o.id, channel:o.channel||"manual", order_id:o.order_id||"", order_sub_no:Number(o.order_sub_no)||1,
+    sales_id:o.sales_id||null, product_code:o.product_code||"", product_name:o.product_name||"",
+    variation_code:o.variation_code||"", jan_code:o.jan_code||"",
+    qty:Number(o.qty)||1, unit_price:Number(o.unit_price)||0, product_total:Number(o.product_total)||0,
+    shipping_fee:Number(o.shipping_fee)||0, order_total:Number(o.order_total)||0,
+    ship_by_date:o.ship_by_date||"", customer_user_id:o.customer_user_id||"",
+    ship_name:o.ship_name||"", ship_phone:o.ship_phone||"", ship_zip:o.ship_zip||"",
+    ship_pref:o.ship_pref||"", ship_city:o.ship_city||"", ship_addr:o.ship_addr||"",
+    gift_sender_name:o.gift_sender_name||"", campaign_info:o.campaign_info||"",
+    carrier:o.carrier||"", tracking_no:o.tracking_no||"", ship_date:o.ship_date||"",
+    order_status_raw:o.order_status_raw||"", status:o.status||"pending",
+    fulfillment_stage:o.fulfillment_stage||"none", stock_items:o.stock_items||[],
+    lot_consumption:o.lot_consumption||[], memo:o.memo||""
+  };
+}
+async function saveRowNow(o){
+  const r = await fetch(SB_ORDERS, { method:"POST", headers: sbHeaders({ "Prefer":"resolution=merge-duplicates,return=minimal" }), body: JSON.stringify([orderBody(o)]) });
+  if (!r.ok) throw new Error("HTTP "+r.status);
+  localStorage.setItem(CACHE_KEY, JSON.stringify(DATA));
+}
+async function deleteRow(id){
+  try { await fetch(SB_ORDERS + "?id=eq."+encodeURIComponent(id), { method:"DELETE", headers: sbHeaders() }); }
+  catch(e){}
+  localStorage.setItem(CACHE_KEY, JSON.stringify(DATA));
+}
+async function pushSaleExternalCode(sale){
+  try { await fetch(SB_SALES + "?id=eq."+encodeURIComponent(sale.id), { method:"PATCH", headers: sbHeaders(), body: JSON.stringify({ external_code: sale.external_code }) }); }
+  catch(e){}
+}
+
+/* ---------- 在庫連動（2段階: reserved=確保中 / shipped=出荷確定=実在庫を減算） ---------- */
+async function adjustStock(productId, delta){
+  const p = PRODUCTS.find(x=>x.id===productId);
+  const current = p ? (Number(p.stock)||0) : 0;
+  const next = Math.max(0, current + delta);
+  if (p) p.stock = next;
+  try { await fetch(SB_PRODUCTS + "?id=eq."+encodeURIComponent(productId), { method:"PATCH", headers: sbHeaders(), body: JSON.stringify({ stock: next }) }); }
+  catch(e){}
+}
+async function adjustReserved(productId, delta){
+  const p = PRODUCTS.find(x=>x.id===productId);
+  const current = p ? (Number(p.reserved)||0) : 0;
+  const next = Math.max(0, current + delta);
+  if (p) p.reserved = next;
+  try { await fetch(SB_PRODUCTS + "?id=eq."+encodeURIComponent(productId), { method:"PATCH", headers: sbHeaders(), body: JSON.stringify({ reserved: next }) }); }
+  catch(e){}
+}
+function desiredStage(o){
+  if (!o.sales_id || o.status === "cancelled") return "none";
+  if (o.status === "shipped") return "shipped";
+  return "reserved";
+}
+/* ---------- 賞味期限ロットのFEFO消費（出荷確定した分を、期限が早いロットから差し引く） ---------- */
+async function pushLotRemaining(lot){
+  try { await fetch(SB_STOCKIN + "?id=eq."+encodeURIComponent(lot.id), { method:"PATCH", headers: sbHeaders(), body: JSON.stringify({ remaining_qty: lot.remaining_qty }) }); }
+  catch(e){}
+}
+function consumeFEFO(productId, qty){
+  const lots = STOCKIN.filter(l=>l.product_id===productId && (Number(l.remaining_qty)||0) > 0)
+    .sort((a,b)=>{
+      if (!a.expiration_date && !b.expiration_date) return 0;
+      if (!a.expiration_date) return 1;
+      if (!b.expiration_date) return -1;
+      return a.expiration_date.localeCompare(b.expiration_date);
+    });
+  const consumed = [];
+  let remain = qty;
+  for (const lot of lots){
+    if (remain <= 0) break;
+    const take = Math.min(remain, Number(lot.remaining_qty)||0);
+    if (take <= 0) continue;
+    lot.remaining_qty = (Number(lot.remaining_qty)||0) - take;
+    consumed.push({ stock_in_id: lot.id, qty: take });
+    remain -= take;
+  }
+  return consumed;
+}
+async function persistLotConsumption(consumed){
+  for (const c of consumed){
+    const lot = STOCKIN.find(l=>l.id===c.stock_in_id);
+    if (lot) await pushLotRemaining(lot);
+  }
+}
+async function restoreFEFO(consumed){
+  for (const c of consumed){
+    const lot = STOCKIN.find(l=>l.id===c.stock_in_id);
+    if (!lot) continue;
+    lot.remaining_qty = (Number(lot.remaining_qty)||0) + c.qty;
+    await pushLotRemaining(lot);
+  }
+}
+
+async function releaseStage(o){
+  if (o.fulfillment_stage === "reserved"){
+    for (const it of o.stock_items) await adjustReserved(it.product_id, -it.qty);
+  } else if (o.fulfillment_stage === "shipped"){
+    for (const it of o.stock_items) await adjustStock(it.product_id, it.qty);
+    await restoreFEFO(o.lot_consumption || []);
+  }
+  o.fulfillment_stage = "none"; o.stock_items = []; o.lot_consumption = [];
+}
+async function syncStock(o){
+  await releaseStage(o);
+  const stage = desiredStage(o);
+  if (stage === "none") return;
+  const sale = SALES.find(s=>s.id===o.sales_id);
+  if (!sale || !sale.items || !sale.items.length) return;
+  const snap = sale.items.map(it => ({ product_id: it.product_id, qty: (Number(it.qty)||1) * (Number(o.qty)||1) }));
+  if (stage === "reserved"){
+    for (const it of snap) await adjustReserved(it.product_id, it.qty);
+  } else if (stage === "shipped"){
+    const consumedAll = [];
+    for (const it of snap){
+      await adjustStock(it.product_id, -it.qty);
+      consumedAll.push(...consumeFEFO(it.product_id, it.qty));
+    }
+    await persistLotConsumption(consumedAll);
+    o.lot_consumption = consumedAll;
+  }
+  o.fulfillment_stage = stage; o.stock_items = snap;
+}
+
+/* ---------- 商品コード ⇔ 販売登録 の紐付け伝播 ---------- */
+async function applyExternalCodeMatch(productCode, salesId){
+  if (!productCode) return;
+  for (const other of DATA){
+    if (other.sales_id || other.product_code !== productCode) continue;
+    other.sales_id = salesId;
+    await syncStock(other);
+    await saveRowNow(other);
+  }
+}
+function nextSaleId(){ let m=0; for (const s of SALES){ const x=/^SALE(\d+)$/.exec(s.id||""); if (x) m=Math.max(m,parseInt(x[1],10)); } return "SALE"+String(m+1).padStart(4,"0"); }
+function nextOrderId(){ let m=0; for (const o of DATA){ const x=/^ORD(\d+)$/.exec(o.id||""); if (x) m=Math.max(m,parseInt(x[1],10)); } return "ORD"+String(m+1).padStart(4,"0"); }
+
+/* ---------- 描画 ---------- */
+function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function yen(n){ return (n==null||n==="") ? "-" : Number(n).toLocaleString("ja-JP"); }
+function baseName(id){ const p=PRODUCTS.find(x=>x.id===id); return p?p.name:id; }
+function salesLabel(s){ return s.name || ((s.items&&s.items.length) ? s.items.map(it=>baseName(it.product_id)).join("+") : s.id); }
+function salesOptions(sel){
+  let o = '<option value="">（販売登録を選択…未紐付け）</option>';
+  for (const s of SALES){ o += `<option value="${esc(s.id)}"${s.id===sel?" selected":""}>${esc(salesLabel(s))}（${esc(s.id)}）</option>`; }
+  if (sel && !SALES.some(s=>s.id===sel)) o += `<option value="${esc(sel)}" selected>${esc(sel)}（一覧外）</option>`;
+  return o;
+}
+const STAGE_LABEL = { none:"未紐付け", reserved:"確保中", shipped:"出荷確定済み" };
+
+function populateChannelFilter(){
+  const sel = document.getElementById("channelFilter");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">すべてのチャネル</option>' +
+    Object.entries(CHANNEL_LABEL).map(([k,l])=>`<option value="${k}">${l}</option>`).join("");
+  sel.value = cur;
+}
+
+function render(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const channelFilter = document.getElementById("channelFilter").value;
+  const stageFilter = document.getElementById("stageFilter").value;
+  const list = document.getElementById("list"); list.innerHTML = "";
+  let cNone=0, cRes=0, cShip=0;
+
+  DATA.forEach((o,si)=>{
+    if (o.fulfillment_stage==="none") cNone++; else if (o.fulfillment_stage==="reserved") cRes++; else if (o.fulfillment_stage==="shipped") cShip++;
+    if (channelFilter && o.channel!==channelFilter) return;
+    if (stageFilter && o.fulfillment_stage!==stageFilter) return;
+    const hay=[o.id,o.order_id,o.product_name,o.product_code,o.ship_name].join(" ").toLowerCase();
+    if (q && !hay.includes(q)) return;
+
+    const el=document.createElement("div");
+    el.className="row stage-"+o.fulfillment_stage;
+    el.innerHTML=
+      `<span class="chbadge">${esc(CHANNEL_LABEL[o.channel]||o.channel)}</span>
+       <span class="oid">${esc(o.id)}</span>
+       <div class="prodinfo">
+         <div class="name">${esc(o.product_name)||"(商品名未設定)"} ×${Number(o.qty)||1}</div>
+         <div class="sub">${o.product_code?esc(o.product_code):""}</div>
+       </div>
+       <div class="salespick">
+         <select data-si="${si}" data-f="sales_id">${salesOptions(o.sales_id)}</select>
+         ${!o.sales_id ? `<button class="ghost newsale" data-si="${si}" data-act="newsale">＋新規登録</button>` : ""}
+       </div>
+       <span class="shipname">${esc(o.ship_name)||"-"}</span>
+       <span class="stagebadge ${o.fulfillment_stage}">${STAGE_LABEL[o.fulfillment_stage]}</span>
+       <select class="statusSel" data-si="${si}" data-f="status">
+         <option value="pending"${o.status==="pending"?" selected":""}>未発送</option>
+         <option value="shipped"${o.status==="shipped"?" selected":""}>発送済み</option>
+         <option value="cancelled"${o.status==="cancelled"?" selected":""}>キャンセル</option>
+       </select>
+       <div class="actions">
+         ${o.fulfillment_stage==="reserved" ? `<button class="finalize" data-si="${si}" data-act="finalize">出荷確定にする</button>` : ""}
+       </div>`;
+    list.appendChild(el);
+  });
+
+  document.getElementById("cnone").textContent = cNone;
+  document.getElementById("cres").textContent = cRes;
+  document.getElementById("cship").textContent = cShip;
+  document.getElementById("empty").style.display = list.children.length ? "none" : "block";
+}
+
+/* ---------- 編集 ---------- */
+document.getElementById("list").addEventListener("change", async e=>{
+  const el=e.target, si=el.dataset.si; if (si==null) return;
+  const o=DATA[si], f=el.dataset.f; if (!f) return;
+  if (f==="status"){
+    o.status = el.value;
+    setSync("saving","在庫を同期中…"); await syncStock(o); render();
+  } else if (f==="sales_id"){
+    o.sales_id = el.value || null;
+    if (o.sales_id && o.product_code){
+      const sale = SALES.find(s=>s.id===o.sales_id);
+      if (sale && sale.external_code !== o.product_code){ sale.external_code = o.product_code; pushSaleExternalCode(sale); }
+    }
+    setSync("saving","在庫を同期中…"); await syncStock(o);
+    if (o.sales_id && o.product_code) await applyExternalCodeMatch(o.product_code, o.sales_id);
+    render();
+  }
+  try { await saveRowNow(o); setSync("ok","サーバ保存済み ✓"); } catch(err){ setSync("err","⚠ サーバ未保存"); }
+});
+document.getElementById("list").addEventListener("click", async e=>{
+  const b=e.target.closest("[data-act]"); if (!b) return;
+  const si=+b.dataset.si, o=DATA[si];
+  if (b.dataset.act==="finalize"){
+    o.status = "shipped";
+    setSync("saving","在庫を同期中…"); await syncStock(o);
+    try { await saveRowNow(o); setSync("ok","出荷確定にしました ✓"); } catch(err){ setSync("err","⚠ サーバ未保存"); }
+    render();
+  } else if (b.dataset.act==="newsale"){
+    const name = prompt("新しい販売登録の名称を入力してください\n（構成品〈社内商品〉や掲載チャネルの設定は、後で「販売登録」ページから行ってください）", o.product_name||"");
+    if (name===null) return;
+    const sale = {
+      id: nextSaleId(), name: name.trim() || o.product_name || o.product_code || "",
+      line_id: "", items: [], channels: {}, memo: "",
+      position: SALES.reduce((m,s)=>Math.max(m,s.position||0),0) + 1,
+      external_code: o.product_code || ""
+    };
+    try {
+      const r = await fetch(SB_SALES, { method:"POST", headers: sbHeaders({ "Prefer":"resolution=merge-duplicates,return=minimal" }), body: JSON.stringify([sale]) });
+      if (!r.ok) throw new Error("HTTP "+r.status);
+    } catch(err){ alert("販売登録の作成に失敗しました。時間をおいて再度お試しください。"); return; }
+    SALES.push(sale);
+    o.sales_id = sale.id;
+    setSync("saving","在庫を同期中…"); await syncStock(o);
+    await applyExternalCodeMatch(o.product_code, sale.id);
+    try { await saveRowNow(o); } catch(err){}
+    render();
+    alert(`${sale.id} を新規登録しました。同じ商品コードの他の未紐付け注文にも自動で反映しました。`);
+  }
+});
+
+document.getElementById("addorder").addEventListener("click", async ()=>{
+  const name = prompt("商品名を入力してください（ToB/卸・その他の手動注文）", "");
+  if (name===null) return;
+  const o = normalize({ id: nextOrderId(), channel:"tob", status:"pending", product_name:name.trim() });
+  DATA.unshift(o);
+  try { await saveRowNow(o); setSync("ok","サーバ保存済み ✓"); } catch(err){ setSync("err","⚠ サーバ未保存"); }
+  document.getElementById("stageFilter").value = "";
+  render();
+});
+
+document.getElementById("reload").addEventListener("click",()=>{ if (confirm("サーバから最新を読み込みます。よろしいですか？")) loadServer(); });
+document.getElementById("q").addEventListener("input",render);
+document.getElementById("channelFilter").addEventListener("change",render);
+document.getElementById("stageFilter").addEventListener("change",render);
+populateChannelFilter();
+
+/* ---------- サイドバー: ログアウト・新規追加 ---------- */
+document.getElementById("logoutBtn").addEventListener("click", e=>{
+  e.preventDefault();
+  sessionStorage.removeItem(GATE_KEY);
+  location.reload();
+});
+(function(){
+  const target = document.getElementById("addrow") || document.getElementById("addsale") || document.getElementById("addorder");
+  const btn = document.getElementById("sidebarAdd");
+  if (target && btn){
+    btn.textContent = target.textContent;
+    btn.style.display = "block";
+    btn.addEventListener("click", ()=>target.click());
+  }
+})();
+
+if (sessionStorage.getItem(GATE_KEY)==="1") unlock();
+else document.getElementById("gatepw").focus();
+</script>
+</body>
+</html>
