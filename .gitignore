@@ -4,5 +4,7 @@ __pycache__/
 *.swp
 # ダウンロードした商品画像（ローカル専用・GitHubには載せない）
 images/
+# DBバックアップ（顧客の氏名・住所等が含まれるためGitHub（Public）には載せない・ローカル専用）
+backups/
 # docs/ 配下の products.json / products.csv / last_run.json は
 # 意図的にコミットする（GitHub Pages で公開＆履歴を残すため）
