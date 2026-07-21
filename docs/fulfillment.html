@@ -85,6 +85,8 @@
   .salespick select { width: 100%; font-size: .82rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface2); }
   .statusSel { font-size: .8rem; padding: 6px 8px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface2); }
   .shipname { font-size: .8rem; color: var(--muted); min-width: 100px; }
+  .shipdate { display: flex; flex-direction: column; gap: 2px; font-size: .7rem; color: var(--muted); }
+  .shipdate input[type="date"] { font-size: .8rem; padding: 5px 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface2); color: var(--text); }
   .actions { display: flex; gap: 6px; margin-left: auto; }
   button.finalize { background: var(--ok); color: #fff; border-color: var(--ok); }
   button.newsale { font-size: .76rem; padding: 5px 9px; }
@@ -121,11 +123,11 @@
   </div>
   <nav class="sidenav">
     <a href="manage.html"><span class="ic">📦</span>社内 商品マスター</a>
-    <a href="sales.html"><span class="ic">🏷️</span>販売登録</a>
+    <a href="orders.html"><span class="ic">📮</span>注文管理</a>
     <a href="fulfillment.html" class="active"><span class="ic">🚚</span>出庫管理</a>
     <a href="stock_in.html"><span class="ic">📥</span>入荷管理</a>
+    <a href="sales.html"><span class="ic">🏷️</span>販売登録</a>
     <a href="index.html"><span class="ic">🎁</span>LINE GIFT 商品</a>
-    <a href="orders.html"><span class="ic">📮</span>注文管理</a>
     <a href="brushup.html"><span class="ic">✨</span>ブラッシュアップ</a>
   </nav>
   <button class="sidebar-add" id="sidebarAdd" style="display:none"></button>
@@ -404,7 +406,11 @@ function render(){
   const list = document.getElementById("list"); list.innerHTML = "";
   let cNone=0, cRes=0, cShip=0;
 
-  DATA.forEach((o,si)=>{
+  const indices = DATA.map((_,si)=>si);
+  indices.sort((a,b)=> (DATA[b].ship_date||"").localeCompare(DATA[a].ship_date||""));
+
+  indices.forEach(si=>{
+    const o = DATA[si];
     if (o.fulfillment_stage==="none") cNone++; else if (o.fulfillment_stage==="reserved") cRes++; else if (o.fulfillment_stage==="shipped") cShip++;
     if (channelFilter && o.channel!==channelFilter) return;
     if (stageFilter && o.fulfillment_stage!==stageFilter) return;
@@ -425,6 +431,9 @@ function render(){
          ${!o.sales_id ? `<button class="ghost newsale" data-si="${si}" data-act="newsale">＋新規登録</button>` : ""}
        </div>
        <span class="shipname">${esc(o.ship_name)||"-"}</span>
+       <label class="shipdate">出庫日
+         <input type="date" value="${esc(o.ship_date)}" data-si="${si}" data-f="ship_date">
+       </label>
        <span class="stagebadge ${o.fulfillment_stage}">${STAGE_LABEL[o.fulfillment_stage]}</span>
        <select class="statusSel" data-si="${si}" data-f="status">
          <option value="pending"${o.status==="pending"?" selected":""}>未発送</option>
@@ -450,6 +459,8 @@ document.getElementById("list").addEventListener("change", async e=>{
   if (f==="status"){
     o.status = el.value;
     setSync("saving","在庫を同期中…"); await syncStock(o); render();
+  } else if (f==="ship_date"){
+    o.ship_date = el.value;
   } else if (f==="sales_id"){
     o.sales_id = el.value || null;
     if (o.sales_id && o.product_code){
@@ -467,6 +478,7 @@ document.getElementById("list").addEventListener("click", async e=>{
   const si=+b.dataset.si, o=DATA[si];
   if (b.dataset.act==="finalize"){
     o.status = "shipped";
+    if (!o.ship_date) o.ship_date = new Date().toISOString().slice(0,10);
     setSync("saving","在庫を同期中…"); await syncStock(o);
     try { await saveRowNow(o); setSync("ok","出荷確定にしました ✓"); } catch(err){ setSync("err","⚠ サーバ未保存"); }
     render();

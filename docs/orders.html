@@ -162,11 +162,11 @@
   </div>
   <nav class="sidenav">
     <a href="manage.html"><span class="ic">📦</span>社内 商品マスター</a>
-    <a href="sales.html"><span class="ic">🏷️</span>販売登録</a>
+    <a href="orders.html" class="active"><span class="ic">📮</span>注文管理</a>
     <a href="fulfillment.html"><span class="ic">🚚</span>出庫管理</a>
     <a href="stock_in.html"><span class="ic">📥</span>入荷管理</a>
+    <a href="sales.html"><span class="ic">🏷️</span>販売登録</a>
     <a href="index.html"><span class="ic">🎁</span>LINE GIFT 商品</a>
-    <a href="orders.html" class="active"><span class="ic">📮</span>注文管理</a>
     <a href="brushup.html"><span class="ic">✨</span>ブラッシュアップ</a>
   </nav>
   <button class="sidebar-add" id="sidebarAdd" style="display:none"></button>
@@ -197,8 +197,9 @@
       <span style="font-size:.76rem;color:var(--muted);font-weight:600">注文ファイル取込:</span>
       <button id="importLine" class="ghost" style="border-color:var(--line-g);color:var(--line-g)">LINE GIFT 発送報告(.xlsx)を取込</button>
       <button class="ghost" disabled title="サンプルファイル受領後に対応予定" style="opacity:.5;border-color:var(--yahoo);color:var(--yahoo)">Yahoo取込（準備中）</button>
-      <button class="ghost" disabled title="サンプルファイル受領後に対応予定" style="opacity:.5;border-color:var(--shopify);color:var(--shopify)">Shopify取込（準備中）</button>
+      <button id="importShopify" class="ghost" style="border-color:var(--shopify);color:var(--shopify)">Shopify注文(.csv)を取込</button>
       <input type="file" id="fileLine" accept=".xlsx" style="display:none">
+      <input type="file" id="fileShopify" accept=".csv" style="display:none">
     </div>
     <div class="toolbar" style="margin-top:6px">
       <span style="font-size:.76rem;color:var(--muted);font-weight:600">配送ラベル出力（佐川急便・全件クール便）:</span>
@@ -801,6 +802,117 @@ document.getElementById("fileLine").addEventListener("change", async e=>{
   const f = e.target.files[0]; e.target.value="";
   if (!f) return;
   await importLineGiftFile(f);
+});
+
+/* ---------- Shopify 注文(.csv) 取込 ---------- */
+// RFC4180相当のシンプルなCSVパーサー（引用符内のカンマ・改行・""エスケープに対応）
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (inQuotes){
+      if (c === '"'){
+        if (text[i+1] === '"'){ field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ","){ row.push(field); field = ""; }
+      else if (c === "\r"){ /* skip */ }
+      else if (c === "\n"){ row.push(field); rows.push(row); row = []; field = ""; }
+      else field += c;
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0] !== ""));
+}
+function parseShopifyCsv(text){
+  const rows = parseCSV(text);
+  if (!rows.length) return [];
+  const header = rows[0];
+  const idx = {};
+  header.forEach((h, i) => { idx[h.trim()] = i; });
+  const col = (r, name) => { const i = idx[name]; return (i==null || r[i]==null) ? "" : r[i]; };
+  const seen = {};
+  const out = [];
+  for (let i = 1; i < rows.length; i++){
+    const r = rows[i];
+    const shopifyId = col(r, "Id"); if (!shopifyId) continue;
+    seen[shopifyId] = (seen[shopifyId] || 0) + 1;
+    const qty = parseInt(col(r, "Lineitem quantity"), 10) || 1;
+    const unitPrice = Number(col(r, "Lineitem price")) || 0;
+    const addr2 = col(r, "Shipping Address2");
+    out.push({
+      shopify_id: shopifyId, order_sub_no: seen[shopifyId],
+      order_name: col(r, "Name"),
+      cancelled_at: col(r, "Cancelled at"),
+      fulfillment_status: col(r, "Fulfillment Status"),
+      fulfilled_at: col(r, "Fulfilled at"),
+      product_name: col(r, "Lineitem name"), product_code: col(r, "Lineitem sku"),
+      unit_price: unitPrice, qty: qty, product_total: unitPrice * qty,
+      shipping_fee: Number(col(r, "Shipping")) || 0, order_total: Number(col(r, "Total")) || 0,
+      customer_user_id: col(r, "Email"),
+      ship_name: col(r, "Shipping Name"), ship_phone: col(r, "Shipping Phone"),
+      ship_zip: col(r, "Shipping Zip"), ship_pref: col(r, "Shipping Province Name") || col(r, "Shipping Province"),
+      ship_city: col(r, "Shipping City"),
+      ship_addr: [col(r, "Shipping Address1"), addr2].filter(Boolean).join(" "),
+      memo: col(r, "Notes")
+    });
+  }
+  return out;
+}
+function deriveStatusShopify(r){
+  if ((r.cancelled_at||"").trim()) return "cancelled";
+  if ((r.fulfillment_status||"").toLowerCase() === "fulfilled") return "shipped";
+  return "pending";
+}
+async function importShopifyFile(file){
+  setSync("saving","CSVを解析中…");
+  let rows;
+  try { rows = parseShopifyCsv(await file.text()); }
+  catch(e){ setSync("err","⚠ 解析に失敗"); alert("CSVの解析に失敗しました: "+e.message); return; }
+  if (!rows.length){ setSync("ok","サーバと同期済み ✓"); alert("取込可能な注文行が見つかりませんでした。"); return; }
+
+  let added=0, updatedCount=0, unmatched=0;
+  for (const r of rows){
+    const id = "SP-" + r.shopify_id + "-" + r.order_sub_no;
+    let o = DATA.find(x=>x.id===id);
+    const isNew = !o;
+    if (!o){ o = normalize({ id, channel:"shopify" }); DATA.push(o); }
+    Object.assign(o, {
+      channel:"shopify", order_id:r.order_name||r.shopify_id, order_sub_no:r.order_sub_no,
+      order_status_raw:r.fulfillment_status||"", product_name:r.product_name, product_code:r.product_code,
+      unit_price:r.unit_price, qty:r.qty, product_total:r.product_total,
+      shipping_fee:r.shipping_fee, order_total:r.order_total, customer_user_id:r.customer_user_id,
+      ship_name:r.ship_name, ship_phone:r.ship_phone, ship_zip:r.ship_zip, ship_pref:r.ship_pref,
+      ship_city:r.ship_city, ship_addr:r.ship_addr,
+      ship_date: r.fulfilled_at ? r.fulfilled_at.slice(0,10) : o.ship_date,
+      memo:r.memo || o.memo
+    });
+    if (isNew){
+      o.status = deriveStatusShopify(r);
+      if (!o.sales_id){
+        const match = SALES.find(s=>(s.external_code||"").trim() && s.external_code===r.product_code);
+        if (match) o.sales_id = match.id; else unmatched++;
+      }
+      await syncStock(o);
+      added++;
+    } else {
+      updatedCount++;
+    }
+    try { await saveRowNow(o); } catch(e){}
+  }
+  setSync("ok","取込完了 ✓");
+  render();
+  alert(`取込結果\n新規登録: ${added} 件\n既存の更新: ${updatedCount} 件\n商品コード未紐付け: ${unmatched} 件` +
+    (unmatched ? "\n\n未紐付けの注文は「紐付け（社内の販売登録）」欄から選択してください。一度選ぶと同じ商品コードは次回から自動で紐付きます。" : ""));
+}
+document.getElementById("importShopify").addEventListener("click",()=>document.getElementById("fileShopify").click());
+document.getElementById("fileShopify").addEventListener("change", async e=>{
+  const f = e.target.files[0]; e.target.value="";
+  if (!f) return;
+  await importShopifyFile(f);
 });
 
 /* ---------- 佐川急便 CSV 出力（お届け先データ取込用） ---------- */
