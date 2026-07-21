@@ -270,9 +270,83 @@ const SB_ORDERS = SB_URL + "/rest/v1/romuan_orders";
 const SB_SALES  = SB_URL + "/rest/v1/romuan_sales";
 const SB_PRODUCTS = SB_URL + "/rest/v1/romuan_products";
 const SB_STOCKIN = SB_URL + "/rest/v1/romuan_stock_in";
+const SB_BOXTYPES = SB_URL + "/rest/v1/romuan_box_types";
+const SB_SHIPFEES = SB_URL + "/rest/v1/romuan_shipping_fees";
 const CHANNEL_LABEL = { linegift:"LINE GIFT", yahoo:"Yahoo!ショッピング", shopify:"Shopify", tob:"ToB（卸・法人）", manual:"手動/その他" };
 
-let DATA = [], SALES = [], PRODUCTS = [], STOCKIN = [];
+let DATA = [], SALES = [], PRODUCTS = [], STOCKIN = [], BOX_TYPES = [], SHIP_FEES = [];
+
+/* ---------- 配送地域・送料・ピッキング/パッキング料金 ---------- */
+const PREF_REGION = {
+  "北海道":"北海道",
+  "青森県":"北東北","岩手県":"北東北","秋田県":"北東北",
+  "宮城県":"南東北","山形県":"南東北","福島県":"南東北",
+  "東京都":"関東","神奈川県":"関東","埼玉県":"関東","千葉県":"関東","茨城県":"関東","栃木県":"関東","群馬県":"関東","山梨県":"関東",
+  "新潟県":"信越","長野県":"信越",
+  "富山県":"北陸","石川県":"北陸","福井県":"北陸",
+  "静岡県":"東海","愛知県":"東海","岐阜県":"東海","三重県":"東海",
+  "大阪府":"関西","兵庫県":"関西","京都府":"関西","滋賀県":"関西","奈良県":"関西","和歌山県":"関西",
+  "岡山県":"中国","広島県":"中国","山口県":"中国","鳥取県":"中国","島根県":"中国",
+  "徳島県":"四国","香川県":"四国","愛媛県":"四国","高知県":"四国",
+  "福岡県":"北九州","佐賀県":"北九州","長崎県":"北九州","大分県":"北九州",
+  "熊本県":"南九州","宮崎県":"南九州","鹿児島県":"南九州",
+  "沖縄県":"沖縄"
+};
+function regionForPref(pref){
+  const p = (pref||"").trim();
+  if (!p) return "";
+  if (PREF_REGION[p]) return PREF_REGION[p];
+  const bare = p.replace(/[都道府県]$/,"");
+  for (const k in PREF_REGION){ if (k.replace(/[都道府県]$/,"")===bare) return PREF_REGION[k]; }
+  return "";
+}
+function shippingFeeFor(size, pref){
+  if (!size) return null;
+  const region = regionForPref(pref);
+  if (!region) return null;
+  const row = SHIP_FEES.find(f=>Number(f.size)===Number(size) && f.region===region && f.service_type==="cool");
+  return row ? row.fee : null;
+}
+function pickingFeeFor(salesId){
+  const sale = SALES.find(s=>s.id===salesId);
+  const n = (sale && sale.items && sale.items.length) ? sale.items.length : 1;
+  return 30 + Math.max(0, n-1)*10;
+}
+function packingFeeFor(salesId){
+  const sale = SALES.find(s=>s.id===salesId);
+  return (sale && sale.needs_cushioning) ? 35 : 10;
+}
+function boxFeeFor(boxTypeId){
+  const b = BOX_TYPES.find(x=>x.id===boxTypeId);
+  return b ? (Number(b.cost)||0) : 0;
+}
+function boxLabel(id){ const b=BOX_TYPES.find(x=>x.id===id); return b ? `${b.name}（¥${Number(b.cost)||0}）` : ""; }
+function boxOptions(sel){
+  let o = '<option value="">（箱を選択…未設定）</option>';
+  for (const b of BOX_TYPES){ o += `<option value="${esc(b.id)}"${b.id===sel?" selected":""}>${esc(b.name)}（¥${Number(b.cost)||0}）</option>`; }
+  if (sel && !BOX_TYPES.some(b=>b.id===sel)) o += `<option value="${esc(sel)}" selected>${esc(sel)}（一覧外）</option>`;
+  return o;
+}
+// 注文にコストを再計算して反映（送料・ピッキング・パッキング）。その他料金は手入力のため対象外
+function recomputeCosts(o){
+  o.cost_shipping = shippingFeeFor(o.ship_size, o.ship_pref);
+  o.cost_picking = o.sales_id ? pickingFeeFor(o.sales_id) : null;
+  o.cost_packing = o.sales_id ? packingFeeFor(o.sales_id) : null;
+}
+// 同じ販売登録×同じチャネルの過去の注文から、配送サイズ・箱の初期値を提案する
+// （同じ商品でも販売サイトによって梱包が異なる場合があるため、チャネルも一致条件に含める）
+function applyDefaultsFromHistory(o){
+  if (!o.sales_id) return;
+  const candidates = DATA.filter(x=>x!==o && x.sales_id===o.sales_id && x.channel===o.channel && (x.ship_size || x.box_type_id))
+    .sort((a,b)=>String(b.updated_at||"").localeCompare(String(a.updated_at||"")));
+  const hist = candidates[0];
+  if (!o.ship_size && hist && hist.ship_size) o.ship_size = hist.ship_size;
+  if (!o.box_type_id){
+    if (hist && hist.box_type_id) o.box_type_id = hist.box_type_id;
+    else { const sale = SALES.find(s=>s.id===o.sales_id); if (sale && sale.box_type_id) o.box_type_id = sale.box_type_id; }
+  }
+  recomputeCosts(o);
+}
 
 function sbHeaders(extra){ return Object.assign({ "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json" }, extra||{}); }
 
@@ -296,14 +370,15 @@ function normalize(o){
     ship_name:"", ship_phone:"", ship_zip:"", ship_pref:"", ship_city:"", ship_addr:"",
     gift_sender_name:"", campaign_info:"",
     carrier:"", tracking_no:"", ship_date:"", order_status_raw:"", status:"pending",
-    fulfillment_stage:"none", stock_items:[], lot_consumption:[], memo:""
+    fulfillment_stage:"none", stock_items:[], lot_consumption:[], memo:"",
+    ship_size:null, box_type_id:null, cost_shipping:null, cost_picking:null, cost_packing:null, cost_other:0
   }, o);
 }
 
 /* ---------- 読み込み ---------- */
 async function init(){
   try {
-    const r = await fetch(SB_SALES + "?select=id,name,items,external_code,channels&order=position.asc", { headers: sbHeaders() });
+    const r = await fetch(SB_SALES + "?select=id,name,items,external_code,channels,box_type_id,needs_cushioning&order=position.asc", { headers: sbHeaders() });
     SALES = r.ok ? await r.json() : [];
   } catch { SALES = []; }
   try {
@@ -314,6 +389,14 @@ async function init(){
     const r = await fetch(SB_STOCKIN + "?select=id,product_id,expiration_date,remaining_qty&order=expiration_date.asc", { headers: sbHeaders() });
     STOCKIN = r.ok ? await r.json() : [];
   } catch { STOCKIN = []; }
+  try {
+    const r = await fetch(SB_BOXTYPES + "?select=*&order=position.asc", { headers: sbHeaders() });
+    BOX_TYPES = r.ok ? await r.json() : [];
+  } catch { BOX_TYPES = []; }
+  try {
+    const r = await fetch(SB_SHIPFEES + "?select=*", { headers: sbHeaders() });
+    SHIP_FEES = r.ok ? await r.json() : [];
+  } catch { SHIP_FEES = []; }
   await loadServer();
   if (await autoMatchExisting()) render();
 }
@@ -348,7 +431,12 @@ function orderBody(o){
     carrier:o.carrier||"", tracking_no:o.tracking_no||"", ship_date:o.ship_date||"",
     order_status_raw:o.order_status_raw||"", status:o.status||"pending",
     fulfillment_stage:o.fulfillment_stage||"none", stock_items:o.stock_items||[],
-    lot_consumption:o.lot_consumption||[], memo:o.memo||""
+    lot_consumption:o.lot_consumption||[], memo:o.memo||"",
+    ship_size:o.ship_size||null, box_type_id:o.box_type_id||null,
+    cost_shipping:o.cost_shipping==null?null:Number(o.cost_shipping),
+    cost_picking:o.cost_picking==null?null:Number(o.cost_picking),
+    cost_packing:o.cost_packing==null?null:Number(o.cost_packing),
+    cost_other:Number(o.cost_other)||0
   };
 }
 async function saveRowNow(o){
@@ -479,6 +567,7 @@ async function applyExternalCodeMatch(productCode, salesId){
   for (const other of DATA){
     if (other.sales_id || other.product_code !== productCode) continue;
     other.sales_id = salesId;
+    applyDefaultsFromHistory(other);
     await syncStock(other);
     await saveRowNow(other);
   }
@@ -489,7 +578,7 @@ async function autoMatchExisting(){
   for (const o of DATA){
     if (o.sales_id || !o.product_code) continue;
     const match = SALES.find(s=>(s.external_code||"").trim() && s.external_code===o.product_code);
-    if (match){ o.sales_id = match.id; await syncStock(o); await saveRowNow(o); changed = true; }
+    if (match){ o.sales_id = match.id; applyDefaultsFromHistory(o); await syncStock(o); await saveRowNow(o); changed = true; }
   }
   return changed;
 }
@@ -559,6 +648,21 @@ function detailHTML(si){
         <input value="${esc(o.carrier)}" data-si="${si}" data-f="carrier" placeholder="配送業者">
         <input value="${esc(o.tracking_no)}" data-si="${si}" data-f="tracking_no" placeholder="追跡番号（伝票番号）">
         <input type="date" value="${esc(o.ship_date)}" data-si="${si}" data-f="ship_date" placeholder="発送日">
+        <select data-si="${si}" data-f="ship_size">
+          <option value="">配送サイズ（未選択）</option>
+          ${[60,80,100,140].map(sz=>`<option value="${sz}"${Number(o.ship_size)===sz?" selected":""}>${sz}サイズ</option>`).join("")}
+        </select>
+        <select data-si="${si}" data-f="box_type_id">${boxOptions(o.box_type_id)}</select>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">料金内訳</div>
+      <div class="grid2">
+        <div>送料（自動）: ${o.cost_shipping==null ? '<span style="color:var(--muted)">-（サイズ・地域から自動取得）</span>' : "¥"+yen(o.cost_shipping)}</div>
+        <div>ピッキング料金（自動）: ${o.cost_picking==null ? '<span style="color:var(--muted)">-（販売登録が未設定）</span>' : "¥"+yen(o.cost_picking)}</div>
+        <div>パッキング料金（自動）: ${o.cost_packing==null ? '<span style="color:var(--muted)">-（販売登録が未設定）</span>' : "¥"+yen(o.cost_packing)}</div>
+        <div>箱料金（自動）: ${o.box_type_id ? "¥"+yen(boxFeeFor(o.box_type_id)) : '<span style="color:var(--muted)">-（箱が未選択）</span>'}</div>
+        <input type="number" value="${Number(o.cost_other)||0}" data-si="${si}" data-f="cost_other" placeholder="その他料金">
       </div>
     </div>
     <div class="sec">
@@ -636,9 +740,11 @@ function render(){
 async function onListInput(e){
   const el=e.target, si=el.dataset.si; if (si==null) return;
   const o=DATA[si], f=el.dataset.f; if (!f) return;
-  if (["qty","status","sales_id","channel"].includes(f)) return; // change イベントで処理（在庫連動のため）
+  if (["qty","status","sales_id","channel","ship_size","box_type_id"].includes(f)) return; // change イベントで処理
   if (f==="id"){ const old=o.id; o.id=el.value; if (old!==o.id) deleteRow(old); scheduleSave(o.id); return; }
+  if (f==="cost_other"){ o.cost_other = Number(el.value)||0; scheduleSave(o.id); return; }
   o[f] = el.value;
+  if (f==="ship_pref") recomputeCosts(o); // 表示の再描画はchangeイベント側で行う（入力中の再描画によるフォーカス喪失を防ぐ）
   scheduleSave(o.id);
 }
 async function onListChange(e){
@@ -656,11 +762,22 @@ async function onListChange(e){
       const sale = SALES.find(s=>s.id===o.sales_id);
       if (sale && sale.external_code !== o.product_code){ sale.external_code = o.product_code; pushSaleExternalCode(sale); }
     }
+    applyDefaultsFromHistory(o);
     setSync("saving","在庫を同期中…"); await syncStock(o);
     if (o.sales_id && o.product_code) await applyExternalCodeMatch(o.product_code, o.sales_id);
     render();
   } else if (f==="channel"){
     o.channel = el.value;
+  } else if (f==="ship_size"){
+    o.ship_size = el.value ? Number(el.value) : null;
+    recomputeCosts(o);
+    render();
+  } else if (f==="box_type_id"){
+    o.box_type_id = el.value || null;
+    render();
+  } else if (f==="ship_pref"){
+    recomputeCosts(o);
+    render();
   }
   scheduleSave(o.id);
 }
@@ -695,6 +812,7 @@ async function onListClick(e){
     } catch(err){ alert("販売登録の作成に失敗しました。時間をおいて再度お試しください。"); return; }
     SALES.push(sale);
     o.sales_id = sale.id;
+    applyDefaultsFromHistory(o);
     setSync("saving","在庫を同期中…"); await syncStock(o);
     await applyExternalCodeMatch(o.product_code, sale.id);
     scheduleSave(o.id);

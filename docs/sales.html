@@ -316,6 +316,7 @@ function normalize(s){
   s.memo = s.memo || "";
   s.external_code = s.external_code || "";
   s.box_type_id = s.box_type_id || null;
+  s.needs_cushioning = !!s.needs_cushioning;
   return s;
 }
 
@@ -366,7 +367,7 @@ function scheduleSave(id){
 }
 async function pushRow(id){
   const s = DATA.find(x=>x.id===id); if(!s) return;
-  const body = { id:s.id, name:s.name, line_id:s.channels.linegift.id||"", items:s.items, channels:s.channels, memo:s.memo, position:s.position||0, external_code:s.external_code||"", box_type_id:s.box_type_id||null };
+  const body = { id:s.id, name:s.name, line_id:s.channels.linegift.id||"", items:s.items, channels:s.channels, memo:s.memo, position:s.position||0, external_code:s.external_code||"", box_type_id:s.box_type_id||null, needs_cushioning:!!s.needs_cushioning };
   try {
     const r = await fetch(SB_TABLE, { method:"POST", headers: sbHeaders({ "Prefer":"resolution=merge-duplicates,return=minimal" }), body: JSON.stringify([body]) });
     if (!r.ok) throw new Error("HTTP "+r.status);
@@ -483,6 +484,10 @@ function detailHTML(si, counts){
            <select data-si="${si}" data-f="box_type_id">${boxOptions(s.box_type_id)}</select>
            <button class="ghost" data-si="${si}" data-act="addboxtype" style="white-space:nowrap">＋ 新しい箱を登録</button>
          </div>
+         <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:.86rem">
+           <span class="switch"><input type="checkbox" ${s.needs_cushioning?'checked':''} data-si="${si}" data-f="needs_cushioning"><span class="slider"></span></span>
+           緩衝材が必要な商品（パッキング料金が変わります）
+         </label>
        </div>
        <div class="sec">
          <input class="memo" value="${esc(s.memo||"")}" data-si="${si}" data-f="memo" placeholder="メモ">
@@ -573,8 +578,9 @@ function onListInput(e){
     const it=s.items[el.dataset.ii];
     if (el.dataset.if==="qty") it.qty=Math.max(1,parseInt(el.value||"1",10)||1); else it.product_id=el.value;
     scheduleSave(s.id); if(el.tagName==="SELECT") render();
-  } else if (el.dataset.f){                 // ID / 名前 / メモ / 配送箱
+  } else if (el.dataset.f){                 // ID / 名前 / メモ / 配送箱 / 緩衝材
     if (el.dataset.f==="id"){ const old=s.id; s.id=el.value; if(old!==s.id){ deleteRow(old); } }
+    else if (el.type==="checkbox"){ s[el.dataset.f]=el.checked; }
     else { s[el.dataset.f]=el.value; if(el.tagName==="SELECT") render(); }
     scheduleSave(s.id);
   }
